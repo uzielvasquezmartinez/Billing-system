@@ -1,0 +1,143 @@
+<section id="viewFacturaNueva" class="view-panel" aria-labelledby="headingFacturaNueva">
+  <h1 class="page-title" id="headingFacturaNueva">Factura nueva</h1>
+
+  <!-- Aviso de Error General o SKUs sin servicio asociado (role="alert") -->
+  <div id="facturaAlert" class="alert-container" role="alert" aria-live="assertive"></div>
+
+  <div class="invoice-layout">
+    <!-- Formulario a la izquierda -->
+    <div class="invoice-form-area card-panel">
+      <!-- Sección: Datos de la factura -->
+      <h2 class="section-subtitle">Datos de la factura</h2>
+
+      <div class="form-group">
+        <label for="fechaFactura" class="form-label">Fecha de factura <span class="required-indicator" aria-hidden="true">*</span></label>
+        <input
+          type="date"
+          id="fechaFactura"
+          name="fechaFactura"
+          class="form-input"
+          required
+          aria-required="true"
+          aria-describedby="fechaError"
+        />
+        <div id="fechaError" class="field-error" aria-live="polite"></div>
+      </div>
+
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label for="rfcEmisor" class="form-label">RFC del emisor <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input
+            type="text"
+            id="rfcEmisor"
+            name="rfcEmisor"
+            class="form-input font-mono"
+            maxlength="13"
+            placeholder="EMI010203AB1"
+            required
+            aria-required="true"
+            aria-describedby="rfcEmisorError"
+          />
+          <div id="rfcEmisorError" class="field-error" aria-live="polite"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="rfcReceptor" class="form-label">RFC del receptor <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input
+            type="text"
+            id="rfcReceptor"
+            name="rfcReceptor"
+            class="form-input font-mono"
+            maxlength="13"
+            placeholder="REC040506CD2"
+            required
+            aria-required="true"
+            aria-describedby="rfcReceptorError"
+          />
+          <div id="rfcReceptorError" class="field-error" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="direccion" class="form-label">Dirección <span class="required-indicator" aria-hidden="true">*</span></label>
+        <input
+          type="text"
+          id="direccion"
+          name="direccion"
+          class="form-input"
+          placeholder="Av. Universidad 100, Col. Centro, Cuernavaca, Morelos"
+          required
+          aria-required="true"
+          aria-describedby="direccionError"
+        />
+        <div id="direccionError" class="field-error" aria-live="polite"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="comentarios" class="form-label">Comentarios</label>
+        <textarea
+          id="comentarios"
+          name="comentarios"
+          class="form-textarea"
+          placeholder="Pago a 30 días."
+        ></textarea>
+      </div>
+
+      <!-- Sección: Lista de productos -->
+      <h2 class="section-subtitle">Lista de productos</h2>
+
+      <div class="products-table-container">
+        <div class="products-table-header" aria-hidden="true">
+          <span>SKU</span>
+          <span>Cantidad</span>
+          <span>Precio unitario</span>
+          <span>Importe</span>
+          <span class="sr-only">Acciones</span>
+        </div>
+
+        <!-- Renglones dinámicos de productos -->
+        <div id="productsTableBody" class="products-table-rows" role="region" aria-label="Renglones de productos"></div>
+      </div>
+
+      <button type="button" id="addProductBtn" class="btn-add-product">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Agregar producto</span>
+      </button>
+    </div>
+
+    <!-- Resumen lateral a la derecha -->
+    <aside class="invoice-summary-area" aria-label="Resumen del importe">
+      <div class="summary-card">
+        <h2 class="summary-title">Resumen</h2>
+
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <span id="summarySubtotal" class="font-mono">$4,150.00</span>
+        </div>
+
+        <div class="summary-row">
+          <span>IVA 16%</span>
+          <span id="summaryIva" class="font-mono">$664.00</span>
+        </div>
+
+        <hr class="summary-divider" />
+
+        <div class="summary-total-row">
+          <span class="summary-total-label">Total</span>
+          <span id="summaryTotal" class="summary-total-value font-mono">$4,814.00</span>
+        </div>
+      </div>
+
+      <button type="button" id="emitirFacturaBtn" class="btn-emitir">
+        Emitir factura
+      </button>
+
+      <p class="summary-note">
+        Al emitir se valida que cada SKU tenga un servicio asociado. Si alguno no lo tiene, no se emite la factura.
+      </p>
+    </aside>
+  </div>
+</section>

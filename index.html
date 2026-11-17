@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Sistema de Facturación Académico - Emisión de CFDI, Catálogo de Servicios y Exportación" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' https://*.amazonaws.com https://api.facturacion.edu.mx;" />
+    <title>Sistema de Facturación Académico</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Hojas de estilo modulares sin paso de compilación -->
+    <link rel="stylesheet" href="/css/variables.css" />
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+  </head>
+  <body>
+    <!-- Enlace de accesibilidad para lectores de pantalla -->
+    <a href="#mainContent" class="skip-link">Saltar al contenido principal</a>
+
+    <!-- Barra Superior de Navegación Encapsulada (Montada desde /views/navbar.html) -->
+    <header class="app-header" id="appHeader"></header>
+
+    <!-- Contenedor Principal de Módulos (Montado dinámicamente desde /views/{modulo}.html) -->
+    <main id="mainContent" class="app-main">
+      <div class="main-content-wrapper" id="viewContainer"></div>
+    </main>
+
+    <!-- Contenedor de Acceso / Login (Montado dinámicamente desde /views/login.html) -->
+    <div id="loginContainer" style="display: none;"></div>
+
+    <!-- Script Principal (Módulo ES Nativo) -->
+    <script type="module" src="/js/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,256 @@
+/**
+ * Estilos de Layout y Rejilla
+ * Barra de navegación encapsulada en el centro con los 3 módulos.
+ * Disposición de dos columnas (formulario / resumen, catálogo / detalle, emitida / exportar).
+ * Responsivo hasta 360 px sin scroll horizontal en la página.
+ */
+
+/* ==========================================================================
+   Barra Superior de Navegación Encapsulada
+   ========================================================================== */
+.app-header {
+  background-color: var(--color-dark-header);
+  color: var(--color-text-light);
+  height: 68px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.header-container {
+  max-width: 1440px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+/* Izquierda: Logotipo y Título */
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+  color: var(--color-text-light);
+}
+
+.brand-title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* CENTRO: Encapsulación de un rectángulo con los 3 módulos */
+.nav-center-wrapper {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+}
+
+.nav-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background-color: var(--color-dark-capsule-bg);
+  border: 1px solid var(--color-dark-capsule-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-1);
+  box-shadow: var(--shadow-capsule);
+  backdrop-filter: blur(8px);
+}
+
+.nav-module-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  min-height: 44px;
+  background: transparent;
+  color: var(--color-text-light);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.nav-module-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--color-mint);
+}
+
+.nav-module-btn:active {
+  transform: scale(0.96);
+}
+
+/* Módulo activo en Mint (#A7F3D0) con texto en Esmerald profundo */
+.nav-module-btn.is-active {
+  background-color: var(--color-mint);
+  color: var(--color-text-on-mint);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Derecha: Botón Salir */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.btn-logout {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-md);
+  color: var(--color-text-light);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-logout:hover {
+  border-color: #f87171;
+  color: #f87171;
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+.btn-logout:active {
+  transform: scale(0.96);
+}
+
+/* ==========================================================================
+   Contenedor Principal de la Aplicación
+   ========================================================================== */
+.app-main {
+  background-color: var(--color-canvas-bg);
+  min-height: calc(100vh - 68px);
+  padding: var(--space-8) var(--space-6) var(--space-12);
+  width: 100%;
+}
+
+.main-content-wrapper {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.page-title {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin-bottom: var(--space-6);
+  letter-spacing: -0.02em;
+}
+
+/* ==========================================================================
+   Layout: Pantalla "Factura nueva" (Izquierda formulario, Derecha resumen)
+   ========================================================================== */
+.invoice-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.invoice-form-area {
+  min-width: 0; /* Previene desbordamiento en CSS grid */
+}
+
+.invoice-summary-area {
+  position: sticky;
+  top: 88px;
+}
+
+/* Contenedor con scroll horizontal propio para la tabla de productos */
+.products-table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: var(--space-5);
+  border-radius: var(--radius-md);
+}
+
+/* ==========================================================================
+   Layout: Pantalla "Factura emitida y exportar"
+   ========================================================================== */
+.emitted-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+/* ==========================================================================
+   Layout: Pantalla "Catálogo de servicios"
+   ========================================================================== */
+.catalog-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+/* ==========================================================================
+   Adaptaciones Responsivas (Móvil y Tablet)
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .invoice-layout,
+  .emitted-layout,
+  .catalog-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .invoice-summary-area {
+    position: static;
+  }
+}
+
+@media (max-width: 860px) {
+  .header-container {
+    flex-wrap: wrap;
+    height: auto;
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-3);
+  }
+
+  .nav-center-wrapper {
+    position: static;
+    transform: none;
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .nav-capsule {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .nav-module-btn {
+    flex: 1;
+    justify-content: center;
+    padding: var(--space-2) var(--space-2);
+    font-size: var(--text-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .app-main {
+    padding: var(--space-5) var(--space-3) var(--space-8);
+  }
+
+  .page-title {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-4);
+  }
+}
