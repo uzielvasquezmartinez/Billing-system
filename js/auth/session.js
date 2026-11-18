@@ -64,10 +64,10 @@ class SessionManager {
   }
 
   /**
-   * Cierra la sesión activa y limpia el almacenamiento
-   * @param {boolean} [redirect=true]
+   * Limpia el almacenamiento de sesión de forma segura
+   * @param {boolean} [redirect=false]
    */
-  logout(redirect = true) {
+  clearSession(redirect = false) {
     try {
       sessionStorage.removeItem(CONFIG.AUTH.STORAGE_KEY_TOKEN);
       sessionStorage.removeItem(CONFIG.AUTH.STORAGE_KEY_USER);
@@ -78,6 +78,14 @@ class SessionManager {
     if (redirect) {
       window.location.hash = '#login';
     }
+  }
+
+  /**
+   * Cierra la sesión activa y redirige al login
+   * @param {boolean} [redirect=true]
+   */
+  logout(redirect = true) {
+    this.clearSession(redirect);
   }
 }
 

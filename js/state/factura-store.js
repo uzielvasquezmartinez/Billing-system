@@ -5,6 +5,7 @@
  */
 
 import { roundToTwo } from '../utils/money.js';
+import { CONFIG } from '../config.js';
 
 class FacturaStore {
   constructor() {
@@ -27,30 +28,42 @@ class FacturaStore {
       direccion: 'Av. Universidad 100, Col. Centro, Cuernavaca, Morelos',
       comentarios: 'Pago a 30 días.',
 
-      // Lista de productos (mínimo 1 renglón)
+      // Lista de productos con banderas fiscales (mínimo 1 renglón)
       productos: [
         {
           id: 'row-1',
           sku: 'SRV-HOST-001',
+          servicioId: 'srv-1',
           cantidad: 2,
           precioUnitario: 1200.00,
           importe: 2400.00,
+          aplicaIVA: true,
+          tasaIVA: CONFIG.IVA_DEFAULT,
+          descuentoMaximo: 0,
           skuError: null
         },
         {
           id: 'row-2',
           sku: 'SRV-SOP-014',
+          servicioId: 'srv-4',
           cantidad: 1,
           precioUnitario: 850.00,
           importe: 850.00,
+          aplicaIVA: true,
+          tasaIVA: CONFIG.IVA_DEFAULT,
+          descuentoMaximo: 0,
           skuError: null
         },
         {
           id: 'row-3',
           sku: 'SRV-DOM-003',
+          servicioId: 'srv-3',
           cantidad: 3,
           precioUnitario: 300.00,
           importe: 900.00,
+          aplicaIVA: true,
+          tasaIVA: CONFIG.IVA_DEFAULT,
+          descuentoMaximo: 0,
           skuError: null
         }
       ],
@@ -127,9 +140,13 @@ class FacturaStore {
     this.state.productos.push({
       id: newId,
       sku: initialData.sku || '',
+      servicioId: initialData.servicioId || null,
       cantidad,
       precioUnitario: precio,
       importe,
+      aplicaIVA: initialData.aplicaIVA !== undefined ? initialData.aplicaIVA : true,
+      tasaIVA: initialData.tasaIVA !== undefined ? initialData.tasaIVA : CONFIG.IVA_DEFAULT,
+      descuentoMaximo: initialData.descuentoMaximo || 0,
       skuError: null
     });
 

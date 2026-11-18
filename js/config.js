@@ -5,19 +5,24 @@
  */
 
 export const CONFIG = Object.freeze({
-  // URL base de Amazon API Gateway
-  API_BASE_URL: 'https://api.facturacion.edu.mx/v1',
+  // URL base de Amazon API Gateway (prod / dev)
+  API_BASE_URL: 'https://<tu-api-id>.execute-api.us-east-1.amazonaws.com/prod',
 
-  // Región de AWS
-  AWS_REGION: 'us-east-1',
+  // Configuración de Amazon Cognito
+  COGNITO: {
+    USER_POOL_ID: 'us-east-1_XXXXXXXXX',
+    CLIENT_ID: 'xxxxxxxxxxxxxxxxxxxxxxxxxx',
+    REGION: 'us-east-1'
+  },
 
-  // Parámetros de autenticación
+  // Parámetros de almacenamiento de sesión local
   AUTH: {
-    USER_POOL_ID: 'us-east-1_academicPoolId',
-    CLIENT_ID: '7abcdef1234567890abcdef12',
     STORAGE_KEY_TOKEN: 'auth_jwt_token',
     STORAGE_KEY_USER: 'auth_user_data'
   },
+
+  // Tasa de IVA por defecto (16% para CFDI en México)
+  IVA_DEFAULT: 0.16,
 
   // Tiempo límite para peticiones HTTP (ms)
   REQUEST_TIMEOUT_MS: 10000,
