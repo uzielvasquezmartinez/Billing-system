@@ -103,8 +103,8 @@ export class LoginFormController {
     const eyeOpen = this.togglePasswordBtn.querySelector('.icon-eye-open');
     const eyeClosed = this.togglePasswordBtn.querySelector('.icon-eye-closed');
     if (eyeOpen && eyeClosed) {
-      eyeOpen.style.display = isPassword ? 'none' : 'block';
-      eyeClosed.style.display = isPassword ? 'block' : 'none';
+      eyeOpen.classList.toggle('is-hidden', isPassword);
+      eyeClosed.classList.toggle('is-hidden', !isPassword);
     }
   }
 
@@ -223,11 +223,11 @@ export class LoginFormController {
     this.submitBtn.setAttribute('aria-busy', submitting ? 'true' : 'false');
 
     if (submitting) {
-      this.btnText.textContent = 'Signing in…';
-      this.btnSpinner.style.display = 'inline-block';
+      this.btnText.textContent = 'Iniciando sesión…';
+      this.btnSpinner.classList.remove('is-hidden');
     } else {
-      this.btnText.textContent = 'Submit';
-      this.btnSpinner.style.display = 'none';
+      this.btnText.textContent = 'Iniciar sesión';
+      this.btnSpinner.classList.add('is-hidden');
     }
   }
 }

@@ -14,7 +14,7 @@ export class EmittedInvoiceController {
     this.currentInvoiceData = null;
 
     // Elementos del DOM
-    this.container = document.getElementById('viewFacturaEmitida');
+    this.container = document.getElementById('invoiceEmittedState') || document.getElementById('viewFacturaEmitida');
     this.folioEl = document.getElementById('emittedFolio');
     this.fechaEl = document.getElementById('emittedFecha');
     this.uuidEl = document.getElementById('emittedUuid');
@@ -34,10 +34,27 @@ export class EmittedInvoiceController {
   }
 
   init() {
+    this.container = document.getElementById('invoiceEmittedState') || document.getElementById('viewFacturaEmitida');
+    this.folioEl = document.getElementById('emittedFolio');
+    this.fechaEl = document.getElementById('emittedFecha');
+    this.uuidEl = document.getElementById('emittedUuid');
+    this.rfcEmisorEl = document.getElementById('emittedRfcEmisor');
+    this.rfcReceptorEl = document.getElementById('emittedRfcReceptor');
+    this.direccionEl = document.getElementById('emittedDireccion');
+    this.comentariosEl = document.getElementById('emittedComentarios');
+
+    this.tableBody = document.getElementById('emittedTableBody');
+    this.subtotalEl = document.getElementById('emittedSubtotal');
+    this.ivaEl = document.getElementById('emittedIva');
+    this.totalEl = document.getElementById('emittedTotal');
+
+    this.downloadPdfBtn = document.getElementById('downloadPdfBtn');
+    this.downloadXmlBtn = document.getElementById('downloadXmlBtn');
+    this.nuevaFacturaBtn = document.getElementById('nuevaFacturaBtn');
+
     if (!this.container) return;
 
     this.bindEvents();
-    this.renderSampleData();
   }
 
   bindEvents() {

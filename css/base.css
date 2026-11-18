@@ -109,14 +109,17 @@ a:hover {
   color: var(--color-emerald-hover);
 }
 
-/* Elementos de formulario accesibles */
+/* Elementos interactivos y de formulario accesibles */
 input,
 button,
 textarea,
-select {
+select,
+a,
+[role="button"] {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Indicador de foco visible estricto */

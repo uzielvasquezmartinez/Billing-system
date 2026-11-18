@@ -1,21 +1,28 @@
 <section id="viewCatalogo" class="view-panel" aria-labelledby="headingCatalogo">
-  <h1 class="page-title" id="headingCatalogo">Catálogo de servicios</h1>
+  <div class="emitted-title-bar">
+    <div>
+      <h1 class="page-title" id="headingCatalogo">Catálogo de Servicios</h1>
+      <p class="cfdi-doc-subtitle">Consulta de claves tributarias SAT, tasas de IVA y asociación de SKUs.</p>
+    </div>
+  </div>
 
   <div class="catalog-search-bar">
-    <label for="catalogSearchInput" class="form-label">Buscar por servicio o SKU</label>
-    <input
-      type="search"
-      id="catalogSearchInput"
-      class="form-input"
-      placeholder="Ej. hosting o SRV-HOST-001"
-      autocomplete="off"
-    />
+    <label for="catalogSearchInput" class="form-label">Buscar servicio o SKU</label>
+    <div class="input-wrapper">
+      <input
+        type="search"
+        id="catalogSearchInput"
+        class="form-input"
+        placeholder="Ej. hosting o SRV-HOST-001"
+        autocomplete="off"
+      />
+    </div>
   </div>
 
   <div class="catalog-layout">
     <!-- Tabla de servicios -->
     <div class="card-panel">
-      <table class="catalog-table">
+      <table class="catalog-table" aria-label="Lista de servicios institucionales">
         <thead>
           <tr>
             <th>Servicio</th>
@@ -28,10 +35,10 @@
       </table>
 
       <div class="catalog-pagination">
-        <span>Página 1</span>
-        <div style="display: flex; gap: var(--space-2);">
-          <button type="button" class="btn-page" disabled>Anterior</button>
-          <button type="button" class="btn-page" disabled>Siguiente</button>
+        <span>Mostrando 3 servicios activos</span>
+        <div class="catalog-pagination-actions">
+          <button type="button" class="btn-page" disabled aria-label="Página anterior">Anterior</button>
+          <button type="button" class="btn-page" disabled aria-label="Página siguiente">Siguiente</button>
         </div>
       </div>
     </div>
@@ -43,31 +50,55 @@
       <div class="skus-associated-header">SKU ASOCIADOS</div>
       <div class="sku-pills-list" id="catalogDetailSkus"></div>
 
-      <div>
-        <div class="accordion-title">
-          <span>Identificación</span>
-          <span class="font-mono">10</span>
-        </div>
-        <div class="accordion-title">
-          <span>Comercial</span>
-          <span class="font-mono">10</span>
-        </div>
-        <div class="accordion-title" style="color: var(--color-emerald); font-weight: 700;">
-          <span>Fiscal y legal</span>
-          <span class="font-mono">12</span>
-        </div>
+      <div class="catalog-accordions">
+        <details class="accordion-item">
+          <summary class="accordion-title">
+            <span>Identificación</span>
+            <span class="font-mono">10</span>
+          </summary>
+          <div class="accordion-content">
+            <p class="summary-note">Claves de catálogo interno e identificador institucional del servicio.</p>
+          </div>
+        </details>
 
-        <!-- Lista de campos fiscales SAT -->
-        <div id="catalogFiscalDetails" style="padding: var(--space-2) 0 var(--space-4);"></div>
+        <details class="accordion-item">
+          <summary class="accordion-title">
+            <span>Comercial</span>
+            <span class="font-mono">10</span>
+          </summary>
+          <div class="accordion-content">
+            <p class="summary-note">Condiciones de venta, moneda base MXN y políticas de facturación periódica.</p>
+          </div>
+        </details>
 
-        <div class="accordion-title">
-          <span>Contractual</span>
-          <span class="font-mono">9</span>
-        </div>
-        <div class="accordion-title">
-          <span>Operativa</span>
-          <span class="font-mono">9</span>
-        </div>
+        <details class="accordion-item" open>
+          <summary class="accordion-title">
+            <span>Fiscal y legal</span>
+            <span class="font-mono">12</span>
+          </summary>
+          <!-- Lista de campos fiscales SAT -->
+          <div id="catalogFiscalDetails" class="accordion-content"></div>
+        </details>
+
+        <details class="accordion-item">
+          <summary class="accordion-title">
+            <span>Contractual</span>
+            <span class="font-mono">9</span>
+          </summary>
+          <div class="accordion-content">
+            <p class="summary-note">Acuerdos de nivel de servicio (SLA) y vigencia del convenio institucional.</p>
+          </div>
+        </details>
+
+        <details class="accordion-item">
+          <summary class="accordion-title">
+            <span>Operativa</span>
+            <span class="font-mono">9</span>
+          </summary>
+          <div class="accordion-content">
+            <p class="summary-note">Parámetros de entrega y aprovisionamiento de infraestructura educativa.</p>
+          </div>
+        </details>
       </div>
     </aside>
   </div>

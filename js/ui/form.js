@@ -133,4 +133,19 @@ export class InvoiceFormController {
       errorEl.classList.remove('is-visible');
     }
   }
+
+  /**
+   * Restablece el formulario a su estado inicial y limpia errores visuales
+   */
+  resetForm() {
+    facturaStore.reset();
+    this.populateInitialValues();
+    if (this.fechaInput) this.clearError(this.fechaInput, this.fechaError);
+    if (this.rfcEmisorInput) this.clearError(this.rfcEmisorInput, this.rfcEmisorError);
+    if (this.rfcReceptorInput) this.clearError(this.rfcReceptorInput, this.rfcReceptorError);
+    if (this.direccionInput) this.clearError(this.direccionInput, this.direccionError);
+    if (this.fechaInput) {
+      this.fechaInput.focus();
+    }
+  }
 }

@@ -41,6 +41,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemsController = new ItemsTableController();
         itemsController.init();
 
+        const creationStateEl = document.getElementById('invoiceCreationState');
+        const emittedStateEl = document.getElementById('invoiceEmittedState');
+
+        // Controlador del comprobante emitido integrado en el mismo módulo
+        const emittedController = new EmittedInvoiceController(() => {
+          // Acción al pulsar "Crear nueva factura": resetea y vuelve al formulario
+          if (creationStateEl && emittedStateEl) {
+            emittedStateEl.classList.add('is-hidden');
+            creationStateEl.classList.remove('is-hidden');
+            formController.resetForm();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        });
+        emittedController.init();
+
         const summaryController = new SummaryController(
           alertManager,
           formController,
@@ -60,21 +75,22 @@ document.addEventListener('DOMContentLoaded', () => {
               impuestos: estadoFactura.serverCalc.impuestos,
               total: estadoFactura.serverCalc.total
             };
-            navbarController.switchView('factura-emitida', true);
+
+            // Mostrar el comprobante oficial timbrado directamente dentro de Factura Nueva
+            if (creationStateEl && emittedStateEl) {
+              creationStateEl.classList.add('is-hidden');
+              emittedStateEl.classList.remove('is-hidden');
+              emittedController.showInvoice(lastEmittedData);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
           }
         );
         summaryController.init();
       }
 
       if (moduleName === 'factura-emitida') {
-        const emittedController = new EmittedInvoiceController(() => {
-          navbarController.switchView('factura-nueva', true);
-        });
-        emittedController.init();
-
-        if (lastEmittedData) {
-          emittedController.showInvoice(lastEmittedData);
-        }
+        // Redirección amigable si se ingresa a la ruta previa
+        navbarController.switchView('factura-nueva', true);
       }
 
       if (moduleName === 'catalogo') {

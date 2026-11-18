@@ -59,7 +59,7 @@
   gap: var(--space-1);
   background-color: var(--color-dark-capsule-bg);
   border: 1px solid var(--color-dark-capsule-border);
-  border-radius: var(--radius-lg);
+  border-radius: 13px; /* Concéntrico: inner 8px + padding 4px + border 1px = 13px */
   padding: var(--space-1);
   box-shadow: var(--shadow-capsule);
   backdrop-filter: blur(8px);
@@ -80,15 +80,19 @@
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
-  transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  transition-property: background-color, color, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
 
-.nav-module-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--color-mint);
+@media (hover: hover) {
+  .nav-module-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-mint);
+  }
 }
 
-.nav-module-btn:active {
+.nav-module-btn:not(:disabled):active {
   transform: scale(0.96);
 }
 
@@ -99,34 +103,309 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* Derecha: Botón Salir */
+/* Derecha: Estado de usuario y botón de cierre de sesión desplazado a la derecha */
 .header-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
-.btn-logout {
-  min-height: 44px;
-  padding: 0 var(--space-4);
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+.user-info-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 42px;
+  padding: 4px 14px 4px 6px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-pill);
+  color: var(--color-cream);
+  font-size: var(--text-xs);
+  user-select: none;
+}
+
+.user-info-pill .user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: var(--color-mint);
+  color: var(--color-emerald-deep);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.user-info-pill .user-email-text {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: rgba(255, 248, 231, 0.92);
+}
+
+@media (max-width: 960px) {
+  .user-info-pill .user-email-text {
+    display: none;
+  }
+  .user-info-pill {
+    padding: 4px 6px;
+  }
+}
+
+/* Botón Icono de Salir desplazado claramente a la derecha */
+.btn-logout-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  background-color: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: var(--radius-md);
-  color: var(--color-text-light);
+  color: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  transition-property: background-color, border-color, color, transform, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) {
+  .btn-logout-icon:hover {
+    background-color: rgba(239, 68, 68, 0.18);
+    border-color: #f87171;
+    color: #fecaca;
+    transform: scale(1.05);
+    box-shadow: 0 2px 10px rgba(220, 38, 38, 0.3);
+  }
+}
+
+.btn-logout-icon:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+/* ==========================================================================
+   Modal Tipo Card de Cierre de Sesión (HTML5 <dialog>)
+   Franja horizontal roja en el tercio superior (~1/3)
+   ========================================================================== */
+dialog.logout-dialog:modal {
+  padding: 0;
+  border: 1px solid rgba(220, 38, 38, 0.22);
+  border-radius: 24px;
+  background-color: #ffffff;
+  color: var(--color-text-main);
+  box-shadow:
+    0 8px 24px rgba(2, 44, 34, 0.12),
+    0 24px 56px -8px rgba(153, 27, 27, 0.28);
+  max-width: 420px;
+  width: calc(100% - 32px);
+  margin: auto;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+dialog.logout-dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background-color: rgba(2, 44, 34, 0.6);
+  backdrop-filter: blur(6px);
+}
+
+.logout-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Parte 1: Franja roja horizontal (~1/3 superior de la tarjeta) */
+.logout-card-banner {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 55%, #991b1b 100%);
+  padding: var(--space-8) var(--space-6) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  position: relative;
+  overflow: hidden;
+}
+
+.logout-card-banner::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.logout-banner-badge {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.logout-banner-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* Parte 2: Aviso central con título, mensaje y datos del usuario */
+.logout-card-body {
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  background-color: #ffffff;
+}
+
+.logout-card-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text-main);
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+.logout-card-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 320px;
+}
+
+.logout-user-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 14px;
+  background-color: var(--color-surface-subtle);
+  border: 1px solid rgba(6, 95, 70, 0.14);
+  border-radius: var(--radius-pill);
+  margin-top: var(--space-1);
+}
+
+.user-avatar-tag {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--color-mint);
+  color: var(--color-emerald-deep);
+  font-weight: 700;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-email-tag {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--color-text-main);
+}
+
+/* Parte 3: Botones inferiores para cancelar o confirmar */
+.logout-card-actions {
+  padding: var(--space-2) var(--space-6) var(--space-6);
+  display: flex;
+  gap: var(--space-3);
+  background-color: #ffffff;
+}
+
+.btn-card-cancel {
+  flex: 1;
+  min-height: 46px;
+  padding: 0 var(--space-4);
+  background-color: #ffffff;
+  border: 1.5px solid rgba(6, 95, 70, 0.22);
+  border-radius: var(--radius-md);
+  color: var(--color-text-main);
   font-size: var(--text-sm);
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition-property: background-color, border-color, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.btn-logout:hover {
-  border-color: #f87171;
-  color: #f87171;
-  background-color: rgba(239, 68, 68, 0.08);
+@media (hover: hover) {
+  .btn-card-cancel:hover {
+    background-color: rgba(6, 95, 70, 0.06);
+    border-color: rgba(6, 95, 70, 0.4);
+  }
 }
 
-.btn-logout:active {
+.btn-card-cancel:not(:disabled):active {
   transform: scale(0.96);
+}
+
+.btn-card-confirm {
+  flex: 1.25;
+  min-height: 46px;
+  padding: 0 var(--space-4);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #ffffff;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+  transition-property: background-color, transform, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) {
+  .btn-card-confirm:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+  }
+}
+
+.btn-card-confirm:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+/* ==========================================================================
+   Contenedor Raíz de Acceso / Login
+   ========================================================================== */
+#loginContainer {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #ffffff;
 }
 
 /* ==========================================================================

@@ -1,186 +1,182 @@
 <div id="viewLogin" class="view-login-container">
-  <!-- Sección izquierda: Formulario de acceso -->
-  <section class="auth-panel" aria-labelledby="loginTitle">
-    <div class="auth-card">
-      <div class="brand-logo" aria-hidden="true">
-        <svg class="brand-icon" viewBox="0 0 44 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M14 6L6 11V37L14 32V6Z" fill="#065f46" fill-opacity="0.9" />
-          <path d="M14 6L22 11V37L14 32V6Z" fill="#065f46" />
-          <path d="M30 11L22 16V42L30 37V11Z" fill="#065f46" fill-opacity="0.8" />
-          <path d="M30 11L38 16V42L30 37V11Z" fill="#065f46" fill-opacity="0.95" />
-        </svg>
+  <!-- Tarjeta flotante centrada con layout partido -->
+  <div class="login-split-card">
+    <!-- Sección izquierda: Formulario de acceso -->
+    <section class="auth-panel" aria-labelledby="loginTitle">
+      <div class="auth-card">
+        <div class="brand-logo" aria-hidden="true">
+          <svg class="brand-icon" viewBox="0 0 44 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 6L6 11V37L14 32V6Z" fill="#065f46" fill-opacity="0.9" />
+            <path d="M14 6L22 11V37L14 32V6Z" fill="#065f46" />
+            <path d="M30 11L22 16V42L30 37V11Z" fill="#065f46" fill-opacity="0.8" />
+            <path d="M30 11L38 16V42L30 37V11Z" fill="#065f46" fill-opacity="0.95" />
+          </svg>
+        </div>
+
+        <header class="auth-header">
+          <h1 class="auth-title" id="loginTitle">Billing System</h1>
+          <p class="auth-subtitle">Ingresa tus credenciales para acceder al sistema de facturación y timbrado CFDI 4.0.</p>
+        </header>
+
+        <div id="globalAlert" class="alert-container" role="alert" aria-live="assertive"></div>
+
+        <form id="loginForm" class="auth-form" novalidate>
+          <div class="form-group">
+            <label for="email" class="form-label">Correo institucional <span class="required-indicator" aria-hidden="true">*</span></label>
+            <div class="input-wrapper">
+              <input
+                type="email"
+                id="email"
+                name="email"
+                class="form-input"
+                placeholder="admin@universidad.edu.mx"
+                required
+                aria-required="true"
+                autocomplete="email"
+                aria-describedby="emailError"
+              />
+            </div>
+            <div id="emailError" class="field-error" aria-live="polite"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="password" class="form-label">Contraseña <span class="required-indicator" aria-hidden="true">*</span></label>
+            <div class="input-wrapper">
+              <input
+                type="password"
+                id="password"
+                name="password"
+                class="form-input"
+                placeholder="••••••••"
+                required
+                aria-required="true"
+                autocomplete="current-password"
+                aria-describedby="passwordError"
+              />
+              <button
+                type="button"
+                id="togglePasswordBtn"
+                class="toggle-password-btn"
+                aria-label="Mostrar contraseña"
+                aria-pressed="false"
+              >
+                <svg class="icon-eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg class="icon-eye-closed is-hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </button>
+            </div>
+            <div id="passwordError" class="field-error" aria-live="polite"></div>
+          </div>
+
+          <div class="form-options">
+            <label class="checkbox-label" for="remember">
+              <input type="checkbox" id="remember" name="remember" class="custom-checkbox" />
+              <span>Recordar mi sesión</span>
+            </label>
+            <a href="#forgot" class="forgot-link">¿Olvidaste tu contraseña?</a>
+          </div>
+
+          <button type="submit" id="submitBtn" class="btn-submit" aria-busy="false">
+            <span id="btnSpinner" class="spinner is-hidden" aria-hidden="true"></span>
+            <span id="btnText">Iniciar sesión</span>
+          </button>
+        </form>
+
+        <footer class="auth-footer">
+          <span>¿Requieres acceso de emisión?</span>
+          <a href="#solicitud" class="trial-link">Solicitar alta institucional</a>
+        </footer>
+      </div>
+    </section>
+
+    <!-- Sección derecha: Panel de recursos institucionales -->
+    <aside class="features-panel" aria-label="Garantías del sistema y soporte">
+      <div class="features-header">
+        <span class="features-eyebrow">Sistema Universitario</span>
+        <h2 class="features-main-title">Facturación Digital</h2>
+        <span class="features-badge">CFDI 4.0 · SAT</span>
       </div>
 
-      <header class="auth-header">
-        <h1 class="auth-title" id="loginTitle">Welcome back</h1>
-        <p class="auth-subtitle">Please enter your details.</p>
-      </header>
+      <div class="features-content">
+        <ul class="features-list">
+          <li class="feature-item">
+            <div class="feature-card">
+              <div class="feature-icon-box" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+              </div>
+              <div class="feature-body">
+                <h3 class="feature-title">Normativa SAT CFDI 4.0</h3>
+                <p class="feature-desc">Emisión oficial con validación de claves y esquemas vigentes del SAT.</p>
+              </div>
+            </div>
+          </li>
 
-      <div id="globalAlert" class="alert-container" role="alert" aria-live="assertive"></div>
+          <li class="feature-item">
+            <div class="feature-card">
+              <div class="feature-icon-box" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+              </div>
+              <div class="feature-body">
+                <h3 class="feature-title">Validación Rigurosa de SKUs</h3>
+                <p class="feature-desc">Verificación automática de servicios antes de autorizar el timbrado.</p>
+              </div>
+            </div>
+          </li>
 
-      <form id="loginForm" class="auth-form" novalidate>
-        <div class="form-group">
-          <label for="email" class="form-label">Email</label>
-          <div class="input-wrapper">
-            <input
-              type="email"
-              id="email"
-              name="email"
-              class="form-input"
-              placeholder="name@company.com"
-              required
-              autocomplete="email"
-              aria-describedby="emailError"
-            />
-          </div>
-          <div id="emailError" class="field-error" aria-live="polite"></div>
-        </div>
+          <li class="feature-item">
+            <div class="feature-card">
+              <div class="feature-icon-box" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+              </div>
+              <div class="feature-body">
+                <h3 class="feature-title">Infraestructura Serverless</h3>
+                <p class="feature-desc">Procesamiento seguro en Amazon API Gateway + AWS Lambda.</p>
+              </div>
+            </div>
+          </li>
 
-        <div class="form-group">
-          <label for="password" class="form-label">Password</label>
-          <div class="input-wrapper">
-            <input
-              type="password"
-              id="password"
-              name="password"
-              class="form-input"
-              placeholder="••••••••"
-              required
-              autocomplete="current-password"
-              aria-describedby="passwordError"
-            />
-            <button
-              type="button"
-              id="togglePasswordBtn"
-              class="toggle-password-btn"
-              aria-label="Mostrar contraseña"
-              aria-pressed="false"
-            >
-              <svg class="icon-eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-              <svg class="icon-eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;" aria-hidden="true">
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                <line x1="1" y1="1" x2="23" y2="23"></line>
-              </svg>
-            </button>
-          </div>
-          <div id="passwordError" class="field-error" aria-live="polite"></div>
-        </div>
+          <li class="feature-item">
+            <div class="feature-card">
+              <div class="feature-icon-box" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+              </div>
+              <div class="feature-body">
+                <h3 class="feature-title">Exportación Fiscal Inmediata</h3>
+                <p class="feature-desc">Descarga directa de comprobantes impresos (PDF) y tributarios (XML).</p>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
 
-        <div class="form-options">
-          <label class="checkbox-label" for="remember">
-            <input type="checkbox" id="remember" name="remember" class="custom-checkbox" />
-            <span>Remember me</span>
-          </label>
-          <a href="#forgot" class="forgot-link">Forgot Password</a>
-        </div>
-
-        <button type="submit" id="submitBtn" class="btn-submit" aria-busy="false">
-          <span id="btnSpinner" class="spinner" style="display: none;" aria-hidden="true"></span>
-          <span id="btnText">Submit</span>
-        </button>
-      </form>
-
-      <footer class="auth-footer">
-        <span>Don't have account?</span>
-        <a href="#trial" class="trial-link">Request a free trial</a>
-      </footer>
-    </div>
-  </section>
-
-  <!-- Sección derecha: Panel de recursos -->
-  <aside class="features-panel" aria-label="Recursos y enlaces de ayuda">
-    <div class="features-content">
-      <ul class="features-list">
-        <li class="feature-item">
-          <a href="#support" class="feature-card">
-            <div class="feature-icon-box" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-              </svg>
-            </div>
-            <div class="feature-body">
-              <h2 class="feature-title">Visit our Support Center</h2>
-              <p class="feature-desc">Get guidance from our Support team.</p>
-            </div>
-            <div class="feature-arrow" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-                <polyline points="12 5 19 12 12 19"></polyline>
-              </svg>
-            </div>
-          </a>
-        </li>
-
-        <li class="feature-item">
-          <a href="#roadmap" class="feature-card">
-            <div class="feature-icon-box" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-            </div>
-            <div class="feature-body">
-              <h2 class="feature-title">View our Product Roadmap</h2>
-              <p class="feature-desc">Browse and vote on what's next.</p>
-            </div>
-            <div class="feature-arrow" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-                <polyline points="12 5 19 12 12 19"></polyline>
-              </svg>
-            </div>
-          </a>
-        </li>
-
-        <li class="feature-item">
-          <a href="#releases" class="feature-card">
-            <div class="feature-icon-box" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="16 12 12 8 8 12"></polyline>
-                <line x1="12" y1="16" x2="12" y2="8"></line>
-              </svg>
-            </div>
-            <div class="feature-body">
-              <h2 class="feature-title">Check out the latest releases</h2>
-              <p class="feature-desc">See new features and updates.</p>
-            </div>
-            <div class="feature-arrow" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-                <polyline points="12 5 19 12 12 19"></polyline>
-              </svg>
-            </div>
-          </a>
-        </li>
-
-        <li class="feature-item">
-          <a href="#community" class="feature-card">
-            <div class="feature-icon-box" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
-            </div>
-            <div class="feature-body">
-              <h2 class="feature-title">Join our Slack Community</h2>
-              <p class="feature-desc">Discuss with hundreds of Corellium users.</p>
-            </div>
-            <div class="feature-arrow" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-                <polyline points="12 5 19 12 12 19"></polyline>
-              </svg>
-            </div>
-          </a>
-        </li>
-      </ul>
-    </div>
-  </aside>
+      <div class="features-footer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>Conexión cifrada TLS 1.3 · AWS CloudFront</span>
+      </div>
+    </aside>
+  </div>
 </div>

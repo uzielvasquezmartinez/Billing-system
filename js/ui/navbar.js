@@ -32,13 +32,17 @@ export class NavbarController {
     this.navLinks = document.querySelectorAll('.nav-module-btn');
     this.logoutBtn = document.getElementById('navbarLogoutBtn');
     this.userBadge = document.getElementById('navbarUserEmail');
+    this.modalUserEmail = document.getElementById('modalUserEmail');
+    this.logoutModal = document.getElementById('logoutModal');
+    this.cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
+    this.confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
 
     this.bindEvents();
     this.updateUserBadge();
 
     // 3. Determinar la vista inicial según hash o sesión
     let initialView = window.location.hash.replace('#', '');
-    if (!initialView) {
+    if (!initialView || initialView === 'factura-emitida') {
       initialView = session.isAuthenticated() ? 'factura-nueva' : 'login';
     }
 
@@ -46,7 +50,7 @@ export class NavbarController {
   }
 
   bindEvents() {
-    // Clics en los 3 módulos de la cápsula
+    // Clics en los módulos principales de la cápsula
     this.navLinks.forEach((btn) => {
       btn.addEventListener('click', async (e) => {
         const targetView = e.currentTarget.getAttribute('data-view');
@@ -56,38 +60,94 @@ export class NavbarController {
       });
     });
 
-    // Botón Salir: Cierra sesión y redirige al Login
-    if (this.logoutBtn) {
-      this.logoutBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
+    // Botón de Usuario / Salir: abre el mini modal accesible de confirmación
+    if (this.logoutBtn && this.logoutModal) {
+      this.logoutBtn.addEventListener('click', () => {
+        this.updateUserBadge();
+        if (typeof this.logoutModal.showModal === 'function') {
+          this.logoutModal.showModal();
+        } else {
+          // Fallback en entornos donde <dialog> no tenga soporte modal
+          if (window.confirm('¿Deseas cerrar tu sesión institucional?')) {
+            session.logout(false);
+            this.switchView('login', true);
+          }
+        }
+      });
+    }
+
+    // Botón Cancelar del modal
+    if (this.cancelLogoutBtn && this.logoutModal) {
+      this.cancelLogoutBtn.addEventListener('click', () => {
+        this.logoutModal.close();
+      });
+    }
+
+    // Botón Confirmar cierre de sesión del modal
+    if (this.confirmLogoutBtn && this.logoutModal) {
+      this.confirmLogoutBtn.addEventListener('click', async () => {
+        this.logoutModal.close();
         session.logout(false);
         await this.switchView('login', true);
+      });
+    }
+
+    // Fallback de light-dismiss (clic fuera del diálogo) si closedby no está soportado nativamente
+    if (this.logoutModal && !('closedBy' in HTMLDialogElement.prototype)) {
+      const isOutside = (e, dialog) => {
+        const r = dialog.getBoundingClientRect();
+        return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+      };
+      let pressedOutside = false;
+      this.logoutModal.addEventListener('pointerdown', (e) => {
+        pressedOutside = isOutside(e, this.logoutModal);
+      });
+      this.logoutModal.addEventListener('pointerup', (e) => {
+        if (pressedOutside && isOutside(e, this.logoutModal)) {
+          this.logoutModal.close();
+        }
       });
     }
 
     // Escuchar cambios de hash (navegación histórica del navegador)
     window.addEventListener('hashchange', async () => {
       const hash = window.location.hash.replace('#', '');
-      if (hash && hash !== this.currentView) {
-        await this.switchView(hash, false);
+      const targetHash = hash === 'factura-emitida' ? 'factura-nueva' : hash;
+      if (targetHash && targetHash !== this.currentView) {
+        await this.switchView(targetHash, false);
       }
     });
   }
 
   updateUserBadge() {
-    if (!this.userBadge) return;
     const user = session.getUser();
-    this.userBadge.textContent = user?.email || 'admin@universidad.edu.mx';
+    const email = user?.email || 'admin@universidad.edu.mx';
+    const initial = email.charAt(0).toUpperCase();
+
+    if (this.userBadge) {
+      this.userBadge.textContent = email;
+    }
+    if (this.modalUserEmail) {
+      this.modalUserEmail.textContent = email;
+    }
+
+    const navbarAvatar = document.querySelector('.user-info-pill .user-avatar') || document.querySelector('.user-profile-btn .user-avatar') || document.querySelector('.user-avatar');
+    if (navbarAvatar) navbarAvatar.textContent = initial;
+
+    const modalAvatar = document.querySelector('.user-avatar-tag') || document.querySelector('.logout-account-avatar');
+    if (modalAvatar) modalAvatar.textContent = initial;
   }
 
   /**
    * Conmuta la vista activa cargando dinámicamente el HTML modular correspondiente
-   * @param {string} viewId - 'login' | 'factura-nueva' | 'factura-emitida' | 'catalogo'
+   * @param {string} viewId - 'login' | 'factura-nueva' | 'catalogo'
    * @param {boolean} [updateHash=true]
    */
   async switchView(viewId, updateHash = true) {
-    const validViews = ['factura-nueva', 'factura-emitida', 'catalogo', 'login'];
-    const activeView = validViews.includes(viewId) ? viewId : 'factura-nueva';
+    const validViews = ['factura-nueva', 'catalogo', 'login'];
+    // Redirige 'factura-emitida' directamente a 'factura-nueva' (ahora unificada)
+    const normalizedView = viewId === 'factura-emitida' ? 'factura-nueva' : viewId;
+    const activeView = validViews.includes(normalizedView) ? normalizedView : 'factura-nueva';
 
     this.currentView = activeView;
 
