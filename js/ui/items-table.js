@@ -1,11 +1,13 @@
 /**
  * Controlador de Lista de Productos Dinámica
- * Selector de servicios poblado desde GET /servicios?limit=100 (sin captura manual de SKU),
- * precioUnitario en modo readonly, cantidad, importe calculado y marcado de errores 422.
+ * El usuario agrega renglones buscando y seleccionando el servicio por nombre desde el buscador del catálogo.
+ * Al seleccionar un servicio, Servicio, SKU (id_service) y precioUnitario se llenan automáticamente en modo readonly.
+ * El usuario únicamente captura la cantidad.
  */
 
 import { facturaStore } from '../state/factura-store.js';
 import { getServicios } from '../api/servicios.js';
+import { session } from '../auth/session.js';
 import { formatMoney } from '../utils/money.js';
 import { validateSKU } from '../utils/validators.js';
 
@@ -13,7 +15,9 @@ export class ItemsTableController {
   constructor() {
     this.tableBody = document.getElementById('productsTableBody');
     this.addBtn = document.getElementById('addProductBtn');
+    this.searchBox = document.getElementById('serviceSearchBox');
     this.filterInput = document.getElementById('serviceFilterInput');
+    this.resultsDropdown = document.getElementById('serviceSearchResults');
 
     this.catalogServices = [];
     this.servicesBySku = new Map();
@@ -31,25 +35,54 @@ export class ItemsTableController {
       this.renderRows(state.productos);
     });
 
-    this.loadServices();
+    if (session.isAuthenticated()) {
+      this.loadServices();
+    }
   }
 
   bindEvents() {
     if (this.addBtn) {
       this.addBtn.addEventListener('click', () => {
-        facturaStore.addProduct();
+        if (this.filterInput) {
+          this.filterInput.focus();
+          this.openResultsDropdown();
+        }
       });
     }
 
     if (this.filterInput) {
+      this.filterInput.addEventListener('focus', () => {
+        this.openResultsDropdown();
+      });
+
       this.filterInput.addEventListener('input', (e) => {
         this.filterQuery = e.target.value.trim().toLowerCase();
-        this.renderRows(facturaStore.getState().productos);
+        this.openResultsDropdown();
+      });
+
+      this.filterInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          this.closeResultsDropdown();
+        } else if (e.key === 'Enter') {
+          const matches = this.getFilteredServices();
+          if (matches.length > 0 && !this.resultsDropdown?.classList.contains('is-hidden')) {
+            e.preventDefault();
+            this.handleSelectService(matches[0]);
+          }
+        }
       });
     }
+
+    document.addEventListener('click', (e) => {
+      if (this.searchBox && !this.searchBox.contains(e.target)) {
+        this.closeResultsDropdown();
+      }
+    });
   }
 
   async loadServices() {
+    if (!session.isAuthenticated()) return;
+
     this.servicesLoaded = false;
     this.servicesLoadError = null;
 
@@ -83,29 +116,105 @@ export class ItemsTableController {
       this.servicesLoaded = true;
     }
 
-    this.renderRows(facturaStore.getState().productos);
+    if (this.resultsDropdown && !this.resultsDropdown.classList.contains('is-hidden')) {
+      this.renderSearchResults();
+    }
   }
 
-  getFilteredServices(currentSku) {
+  getFilteredServices() {
     const query = this.filterQuery;
-    const baseList = !query
-      ? this.catalogServices
-      : this.catalogServices.filter((s) => {
-          return (
-            s.nombre.toLowerCase().includes(query) ||
-            s.sku.toLowerCase().includes(query) ||
-            s.descripcion.toLowerCase().includes(query)
-          );
-        });
+    if (!query) {
+      return this.catalogServices;
+    }
+    return this.catalogServices.filter((s) => {
+      return (
+        s.nombre.toLowerCase().includes(query) ||
+        s.sku.toLowerCase().includes(query) ||
+        s.descripcion.toLowerCase().includes(query)
+      );
+    });
+  }
 
-    if (currentSku && !baseList.some((s) => s.sku === currentSku)) {
-      const currentService = this.servicesBySku.get(currentSku);
-      if (currentService) {
-        return [currentService, ...baseList];
-      }
+  openResultsDropdown() {
+    if (!this.resultsDropdown) return;
+    this.renderSearchResults();
+    this.resultsDropdown.classList.remove('is-hidden');
+    this.filterInput?.setAttribute('aria-expanded', 'true');
+  }
+
+  closeResultsDropdown() {
+    if (!this.resultsDropdown) return;
+    this.resultsDropdown.classList.add('is-hidden');
+    this.filterInput?.setAttribute('aria-expanded', 'false');
+  }
+
+  renderSearchResults() {
+    if (!this.resultsDropdown) return;
+
+    const fragment = document.createDocumentFragment();
+
+    if (!this.servicesLoaded) {
+      const loadingDiv = document.createElement('div');
+      loadingDiv.className = 'service-search-empty';
+      loadingDiv.textContent = 'Cargando catálogo de servicios...';
+      fragment.appendChild(loadingDiv);
+      this.resultsDropdown.replaceChildren(fragment);
+      return;
     }
 
-    return baseList;
+    if (this.servicesLoadError) {
+      const errDiv = document.createElement('div');
+      errDiv.className = 'service-search-empty';
+      errDiv.textContent = this.servicesLoadError;
+      fragment.appendChild(errDiv);
+      this.resultsDropdown.replaceChildren(fragment);
+      return;
+    }
+
+    const matches = this.getFilteredServices();
+    if (matches.length === 0) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'service-search-empty';
+      emptyDiv.textContent = 'No se encontraron servicios con ese criterio.';
+      fragment.appendChild(emptyDiv);
+      this.resultsDropdown.replaceChildren(fragment);
+      return;
+    }
+
+    matches.forEach((srv) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'service-search-item';
+      btn.setAttribute('role', 'option');
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'service-search-name';
+      nameSpan.textContent = srv.nombre;
+
+      const metaSpan = document.createElement('span');
+      metaSpan.className = 'service-search-meta font-mono';
+      metaSpan.textContent = `${srv.sku} | ${formatMoney(srv.precioUnitario)}`;
+
+      btn.appendChild(nameSpan);
+      btn.appendChild(metaSpan);
+
+      btn.addEventListener('click', () => {
+        this.handleSelectService(srv);
+      });
+
+      fragment.appendChild(btn);
+    });
+
+    this.resultsDropdown.replaceChildren(fragment);
+  }
+
+  handleSelectService(service) {
+    facturaStore.addProductWithService(service);
+    this.filterQuery = '';
+    if (this.filterInput) {
+      this.filterInput.value = '';
+    }
+    this.closeResultsDropdown();
   }
 
   /**
@@ -131,56 +240,41 @@ export class ItemsTableController {
       row.className = `product-row ${item.skuError ? 'has-sku-error' : ''}`;
       row.setAttribute('data-id', item.id);
 
-      // Columna 1: Selector de Servicio (almacena id_service SRV-XXX)
+      // Columna 1: Nombre del servicio asignado (readonly)
+      const serviceCol = document.createElement('div');
+      serviceCol.className = 'col-service';
+
+      const serviceInput = document.createElement('input');
+      serviceInput.type = 'text';
+      serviceInput.readOnly = true;
+      serviceInput.setAttribute('readonly', '');
+      serviceInput.setAttribute('aria-readonly', 'true');
+      serviceInput.className = 'form-input is-readonly';
+      serviceInput.value = item.nombreServicio || '';
+      serviceInput.placeholder = 'Selecciona un servicio arriba';
+      serviceInput.setAttribute('aria-label', `Servicio del renglón ${index + 1}`);
+
+      serviceCol.appendChild(serviceInput);
+
+      // Columna 2: SKU interno vinculado al servicio (strictly readonly, no editable manualmente)
       const skuCol = document.createElement('div');
       skuCol.className = 'col-sku';
 
-      const serviceSelect = document.createElement('select');
-      serviceSelect.className = `form-input input-sku ${item.skuError ? 'input-error' : ''}`;
-      serviceSelect.setAttribute('aria-label', `Servicio del renglón ${index + 1}`);
+      const skuInput = document.createElement('input');
+      skuInput.type = 'text';
+      skuInput.readOnly = true;
+      skuInput.setAttribute('readonly', '');
+      skuInput.setAttribute('aria-readonly', 'true');
+      skuInput.className = `form-input input-sku font-mono is-readonly ${item.skuError ? 'input-error' : ''}`;
+      skuInput.value = item.sku || '';
+      skuInput.placeholder = 'Auto-asignado';
+      skuInput.setAttribute('aria-label', `SKU del renglón ${index + 1}`);
 
       if (item.skuError) {
-        serviceSelect.setAttribute('aria-invalid', 'true');
+        skuInput.setAttribute('aria-invalid', 'true');
       }
 
-      const defaultOption = document.createElement('option');
-      defaultOption.value = '';
-      if (!this.servicesLoaded) {
-        defaultOption.textContent = 'Cargando servicios...';
-      } else if (this.servicesLoadError) {
-        defaultOption.textContent = 'Error al cargar servicios';
-      } else {
-        defaultOption.textContent = 'Selecciona un servicio...';
-      }
-      serviceSelect.appendChild(defaultOption);
-
-      const optionsList = this.getFilteredServices(item.sku);
-      optionsList.forEach((srv) => {
-        const opt = document.createElement('option');
-        opt.value = srv.sku;
-        opt.textContent = `${srv.nombre} (${srv.sku})`;
-        serviceSelect.appendChild(opt);
-      });
-
-      // Si el renglón tiene un SKU que ya no existe en el listado, conservar la opción visible para depuración
-      if (item.sku && !optionsList.some((s) => s.sku === item.sku)) {
-        const orphanOpt = document.createElement('option');
-        orphanOpt.value = item.sku;
-        orphanOpt.textContent = item.nombreServicio
-          ? `${item.nombreServicio} (${item.sku})`
-          : item.sku;
-        serviceSelect.appendChild(orphanOpt);
-      }
-
-      serviceSelect.value = item.sku || '';
-
-      serviceSelect.addEventListener('change', (e) => {
-        const selectedSku = e.target.value.trim().toUpperCase();
-        const selectedService = selectedSku ? this.servicesBySku.get(selectedSku) || null : null;
-        facturaStore.setProductService(item.id, selectedService);
-      });
-
-      skuCol.appendChild(serviceSelect);
+      skuCol.appendChild(skuInput);
 
       if (item.skuError) {
         const errorMsg = document.createElement('span');
@@ -194,7 +288,7 @@ export class ItemsTableController {
         skuCol.appendChild(warnMsg);
       }
 
-      // Columna 2: Cantidad (entero 1..9999)
+      // Columna 3: Cantidad (único campo editable por el usuario, entero 1..9999)
       const qtyCol = document.createElement('div');
       qtyCol.className = 'col-qty';
 
@@ -213,7 +307,7 @@ export class ItemsTableController {
 
       qtyCol.appendChild(qtyInput);
 
-      // Columna 3: Precio unitario (readonly, llenado desde DynamoDB)
+      // Columna 4: Precio unitario (readonly, llenado desde DynamoDB)
       const priceCol = document.createElement('div');
       priceCol.className = 'col-price';
 
@@ -222,19 +316,19 @@ export class ItemsTableController {
       priceInput.readOnly = true;
       priceInput.setAttribute('readonly', '');
       priceInput.setAttribute('aria-readonly', 'true');
-      priceInput.className = 'form-input input-price font-mono';
+      priceInput.className = 'form-input input-price font-mono is-readonly';
       priceInput.value = Number(item.precioUnitario || 0).toFixed(2);
       priceInput.setAttribute('aria-label', `Precio unitario renglón ${index + 1}`);
 
       priceCol.appendChild(priceInput);
 
-      // Columna 4: Importe (calculado automáticamente, no editable)
+      // Columna 5: Importe (calculado automáticamente, no editable)
       const totalCol = document.createElement('div');
       totalCol.className = 'col-total font-mono';
       totalCol.textContent = formatMoney(item.importe);
       totalCol.setAttribute('aria-label', `Importe calculado renglón ${index + 1}`);
 
-      // Columna 5: Acción eliminar renglón
+      // Columna 6: Acción eliminar renglón
       const actionCol = document.createElement('div');
       actionCol.className = 'col-action';
 
@@ -259,6 +353,7 @@ export class ItemsTableController {
 
       actionCol.appendChild(deleteBtn);
 
+      row.appendChild(serviceCol);
       row.appendChild(skuCol);
       row.appendChild(qtyCol);
       row.appendChild(priceCol);

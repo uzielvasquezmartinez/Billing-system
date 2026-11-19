@@ -4,7 +4,7 @@
  * NUNCA almacenar secretos, llaves privadas ni credenciales aquí.
  */
 
-const rawApiBaseUrl = import.meta.env?.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
+const rawApiBaseUrl = import.meta.env?.VITE_API_BASE_URL || 'http://127.0.0.1:5001';
 
 export const CONFIG = Object.freeze({
   // URL base de la API REST (inyectada desde .env.development / .env.production)
@@ -26,8 +26,9 @@ export const CONFIG = Object.freeze({
   // Tasa de IVA por defecto (16% para CFDI en México)
   IVA_DEFAULT: 0.16,
 
-  // Tiempo límite para peticiones HTTP (ms)
-  REQUEST_TIMEOUT_MS: 10000,
+  // Tiempos límite para peticiones HTTP (ms)
+  REQUEST_TIMEOUT_MS: 30000,
+  INVOICE_MUTATION_TIMEOUT_MS: 45000,
 
   /**
    * MODO DE PRUEBA / MOCK

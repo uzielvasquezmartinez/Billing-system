@@ -41,9 +41,13 @@ export class LoginFormController {
     this.loadRememberedEmail();
     this.bindEvents();
 
-    const expiredMessage = session.consumeSessionExpiredMessage();
-    if (expiredMessage) {
-      this.alertManager.showError(expiredMessage);
+    const authNotice = session.consumeAuthNotice();
+    if (authNotice?.message) {
+      if (authNotice.type === 'success') {
+        this.alertManager.showSuccess(authNotice.message);
+      } else {
+        this.alertManager.showError(authNotice.message);
+      }
     }
   }
 

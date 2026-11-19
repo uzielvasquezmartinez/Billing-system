@@ -1,33 +1,65 @@
 /**
  * Módulo de Gestión de Sesión y Autenticación
- * Interfaz aislada compatible con AWS Cognito o proveedor JWT personalizado.
+ * Interfaz aislada compatible con AWS Cognito / JWT RS256.
  * Protegido con try/catch en sessionStorage.
  */
 
 import { CONFIG } from '../config.js';
 
+function decodeJwtPayload(token) {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    const json = atob(padded);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
 class SessionManager {
   constructor() {
-    this.sessionExpiredMessage = null;
+    this.authNotice = null;
   }
 
   /**
    * Registra un aviso temporal en memoria para mostrarlo al montar #login
    * @param {string} message
+   * @param {'error' | 'success'} [type='error']
    */
-  setSessionExpiredMessage(message) {
-    this.sessionExpiredMessage = message || null;
+  setAuthNotice(message, type = 'error') {
+    this.authNotice = message ? { message, type } : null;
   }
 
   /**
-   * Obtiene y limpia el aviso temporal de sesión expirada
+   * Obtiene y limpia el aviso temporal de autenticación
+   * @returns {{ message: string, type: 'error' | 'success' } | null}
+   */
+  consumeAuthNotice() {
+    const notice = this.authNotice;
+    this.authNotice = null;
+    return notice;
+  }
+
+  /**
+   * Alias de compatibilidad para avisos de sesión expirada
+   * @param {string} message
+   */
+  setSessionExpiredMessage(message) {
+    this.setAuthNotice(message, 'error');
+  }
+
+  /**
+   * Alias de compatibilidad para consumir aviso de sesión expirada
    * @returns {string | null}
    */
   consumeSessionExpiredMessage() {
-    const msg = this.sessionExpiredMessage;
-    this.sessionExpiredMessage = null;
-    return msg;
+    const notice = this.consumeAuthNotice();
+    return notice?.message || null;
   }
+
   /**
    * Obtiene el token JWT actual de la sesión
    * @returns {string | null}
@@ -41,12 +73,25 @@ class SessionManager {
   }
 
   /**
-   * Comprueba si el usuario está autenticado
+   * Comprueba si existe un token JWT válido (no vacío ni expirado) en sesión
    * @returns {boolean}
    */
   isAuthenticated() {
     const token = this.getToken();
-    return Boolean(token && token.trim().length > 0);
+    if (!token || token.trim().length === 0) {
+      return false;
+    }
+
+    const payload = decodeJwtPayload(token.trim());
+    if (payload && typeof payload.exp === 'number') {
+      const isExpired = Date.now() >= payload.exp * 1000;
+      if (isExpired) {
+        this.clearSession(false);
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**

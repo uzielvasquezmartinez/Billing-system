@@ -1,7 +1,8 @@
 /**
  * Cliente HTTP y Wrapper de Fetch
- * Maneja URL base, cabecera Authorization Bearer (excepto /auth/login),
- * timeout con AbortController, errores normalizados y sesión expirada (401).
+ * Maneja URL base, cabecera Authorization Bearer (excepto rutas públicas de /auth),
+ * timeouts diferenciados (30s estándar, 45s en creación/emisión de facturas),
+ * bloqueo preventivo de rutas protegidas sin token y manejo de HTTP 401.
  */
 
 import { CONFIG } from '../config.js';
@@ -19,28 +20,59 @@ export class ApiError extends Error {
 const EXPIRED_SESSION_MESSAGE =
   'Tu sesión ha expirado o no estás autorizado. Por favor inicia sesión nuevamente.';
 
+const PUBLIC_AUTH_ENDPOINTS = new Set([
+  '/auth/login',
+  '/auth/forgot-password',
+  '/auth/confirm-forgot-password'
+]);
+
+function resolveTimeoutMs(pathOnly, method, customTimeoutMs) {
+  if (typeof customTimeoutMs === 'number' && customTimeoutMs > 0) {
+    return customTimeoutMs;
+  }
+
+  if (
+    method === 'POST' &&
+    (pathOnly === '/facturas' || /^\/facturas\/[^/]+\/emitir$/.test(pathOnly))
+  ) {
+    return CONFIG.INVOICE_MUTATION_TIMEOUT_MS;
+  }
+
+  return CONFIG.REQUEST_TIMEOUT_MS;
+}
+
 /**
  * Realiza una petición HTTP estandarizada
  * @param {string} endpoint - Ruta relativa al API_BASE_URL (ej. '/facturas/validar')
- * @param {object} [options={}] - Opciones de fetch
+ * @param {object} [options={}] - Opciones de fetch (+ timeoutMs opcional)
  * @returns {Promise<any>}
  */
 export async function apiClient(endpoint, options = {}) {
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const isAuthLogin =
-    normalizedEndpoint === '/auth/login' || normalizedEndpoint.startsWith('/auth/login?');
-  const url = `${CONFIG.API_BASE_URL}${normalizedEndpoint}`;
+  const pathOnly = normalizedEndpoint.split('?')[0];
+  const isPublicAuth = PUBLIC_AUTH_ENDPOINTS.has(pathOnly);
+  const { timeoutMs: customTimeoutMs, headers: customHeaders, ...fetchOptions } = options;
+  const method = (fetchOptions.method || 'GET').toUpperCase();
 
+  // Evitar enviar peticiones a endpoints protegidos sin token JWT válido
+  if (!isPublicAuth && !session.isAuthenticated()) {
+    session.setAuthNotice(EXPIRED_SESSION_MESSAGE, 'error');
+    session.logout(true);
+    throw new ApiError(EXPIRED_SESSION_MESSAGE, 401);
+  }
+
+  const url = `${CONFIG.API_BASE_URL}${normalizedEndpoint}`;
+  const timeoutMs = resolveTimeoutMs(pathOnly, method, customTimeoutMs);
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   const headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    ...(options.headers || {})
+    ...(customHeaders || {})
   };
 
-  if (!isAuthLogin) {
+  if (!isPublicAuth) {
     const token = session.getToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -51,7 +83,8 @@ export async function apiClient(endpoint, options = {}) {
 
   try {
     const response = await fetch(url, {
-      ...options,
+      ...fetchOptions,
+      method,
       headers,
       signal: controller.signal
     });
@@ -66,10 +99,9 @@ export async function apiClient(endpoint, options = {}) {
       responseData = await response.text();
     }
 
-    // Si una ruta protegida responde 401, limpia sessionStorage, notifica sesión expirada y redirige a #login
     if (response.status === 401) {
-      if (!isAuthLogin) {
-        session.setSessionExpiredMessage(EXPIRED_SESSION_MESSAGE);
+      if (!isPublicAuth) {
+        session.setAuthNotice(EXPIRED_SESSION_MESSAGE, 'error');
         session.logout(true);
         window.dispatchEvent(
           new CustomEvent('auth:session-expired', {

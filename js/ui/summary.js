@@ -9,6 +9,7 @@ import { formatMoney } from '../utils/money.js';
 import { getCatalogosSat } from '../api/servicios.js';
 import { validarProductos, crearFactura, emitirFactura } from '../api/facturas.js';
 import { ApiError } from '../api/client.js';
+import { session } from '../auth/session.js';
 
 export class SummaryController {
   constructor(alertManager, formController, itemsController, onInvoiceEmitted) {
@@ -33,7 +34,9 @@ export class SummaryController {
       this.updateDisplay(state);
     });
 
-    this.loadCatalogosSat();
+    if (session.isAuthenticated()) {
+      this.loadCatalogosSat();
+    }
   }
 
   bindEvents() {
@@ -44,6 +47,7 @@ export class SummaryController {
   }
 
   async loadCatalogosSat() {
+    if (!session.isAuthenticated()) return;
     try {
       const catalogos = await getCatalogosSat();
       this.formController?.populateSatCatalogs(catalogos);

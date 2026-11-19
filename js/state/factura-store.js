@@ -126,6 +126,38 @@ class FacturaStore {
   }
 
   /**
+   * Agrega un renglón desde el buscador del catálogo o completa el primer renglón vacío
+   * @param {object} service
+   */
+  addProductWithService(service) {
+    if (!service) return;
+
+    const firstRow = this.state.productos[0];
+    if (this.state.productos.length === 1 && firstRow && !firstRow.sku) {
+      this.setProductService(firstRow.id, service);
+      return;
+    }
+
+    const row = createEmptyRow(this.state.productos.length + 1);
+    const idService = String(service.sku || service.id || '').trim().toUpperCase();
+    const precio = Math.max(
+      0,
+      parseFloat(service.precioUnitario ?? service.precio_unitario ?? 0) || 0
+    );
+
+    row.sku = idService;
+    row.servicioId = idService;
+    row.nombreServicio = service.nombre || '';
+    row.precioUnitario = precio;
+    row.importe = roundToTwo(row.cantidad * precio);
+
+    this.state.productos.push(row);
+    this.recalculateLocalSubtotal();
+    this.invalidateServerCalculation();
+    this.notify();
+  }
+
+  /**
    * Quita un renglón de producto (mínimo 1 renglón requerido)
    */
   removeProduct(rowId) {

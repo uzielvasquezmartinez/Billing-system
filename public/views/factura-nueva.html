@@ -33,7 +33,7 @@
             type="date"
             id="fechaFactura"
             name="fechaFactura"
-            class="form-input"
+            class="form-input is-readonly"
             readonly
             aria-readonly="true"
             required
@@ -239,18 +239,31 @@
 
         <div class="form-group">
           <label for="serviceFilterInput" class="form-label">Buscar servicio en el catálogo</label>
-          <input
-            type="search"
-            id="serviceFilterInput"
-            class="form-input"
-            placeholder="Filtrar servicios por nombre o SKU (ej. SRV-001)"
-            autocomplete="off"
-          />
+          <div class="service-search-box" id="serviceSearchBox">
+            <input
+              type="search"
+              id="serviceFilterInput"
+              class="form-input"
+              placeholder="Escribe el nombre del servicio para agregarlo (ej. Hosting, Soporte...)"
+              autocomplete="off"
+              role="combobox"
+              aria-expanded="false"
+              aria-controls="serviceSearchResults"
+              aria-autocomplete="list"
+            />
+            <div
+              id="serviceSearchResults"
+              class="service-search-results is-hidden"
+              role="listbox"
+              aria-label="Servicios disponibles en el catálogo"
+            ></div>
+          </div>
         </div>
 
         <div class="products-table-container">
           <div class="products-table-header" aria-hidden="true">
             <span>Servicio</span>
+            <span>SKU</span>
             <span>Cantidad</span>
             <span>Precio unitario</span>
             <span>Importe</span>
@@ -266,7 +279,7 @@
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          <span>Agregar producto</span>
+          <span>Agregar servicio</span>
         </button>
       </div>
 

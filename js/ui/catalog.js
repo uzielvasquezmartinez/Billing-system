@@ -6,6 +6,7 @@
 
 import { getServicios, getServicioById } from '../api/servicios.js';
 import { ApiError } from '../api/client.js';
+import { session } from '../auth/session.js';
 import { formatMoney } from '../utils/money.js';
 import { AlertManager } from './alerts.js';
 
@@ -40,7 +41,7 @@ export class CatalogController {
   }
 
   init() {
-    if (!this.container) return;
+    if (!this.container || !session.isAuthenticated()) return;
 
     this.bindEvents();
     this.loadServices(1, '');
