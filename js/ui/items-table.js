@@ -1,10 +1,11 @@
 /**
  * Controlador de Lista de Productos Dinámica
- * Renglones editables (SKU, cantidad, precio unitario, importe calculado).
- * Acciones: agregar renglón, quitar renglón (mínimo 1), marcado de SKUs sin servicio.
+ * Selector de servicios poblado desde GET /servicios?limit=100 (sin captura manual de SKU),
+ * precioUnitario en modo readonly, cantidad, importe calculado y marcado de errores 422.
  */
 
 import { facturaStore } from '../state/factura-store.js';
+import { getServicios } from '../api/servicios.js';
 import { formatMoney } from '../utils/money.js';
 import { validateSKU } from '../utils/validators.js';
 
@@ -12,6 +13,13 @@ export class ItemsTableController {
   constructor() {
     this.tableBody = document.getElementById('productsTableBody');
     this.addBtn = document.getElementById('addProductBtn');
+    this.filterInput = document.getElementById('serviceFilterInput');
+
+    this.catalogServices = [];
+    this.servicesBySku = new Map();
+    this.servicesLoaded = false;
+    this.servicesLoadError = null;
+    this.filterQuery = '';
   }
 
   init() {
@@ -19,10 +27,11 @@ export class ItemsTableController {
 
     this.bindEvents();
 
-    // Suscribirse a cambios en la lista de productos
     facturaStore.subscribe((state) => {
       this.renderRows(state.productos);
     });
+
+    this.loadServices();
   }
 
   bindEvents() {
@@ -31,16 +40,81 @@ export class ItemsTableController {
         facturaStore.addProduct();
       });
     }
+
+    if (this.filterInput) {
+      this.filterInput.addEventListener('input', (e) => {
+        this.filterQuery = e.target.value.trim().toLowerCase();
+        this.renderRows(facturaStore.getState().productos);
+      });
+    }
+  }
+
+  async loadServices() {
+    this.servicesLoaded = false;
+    this.servicesLoadError = null;
+
+    try {
+      const response = await getServicios({ q: '', page: 1, limit: 100 });
+      const items = Array.isArray(response)
+        ? response
+        : response?.items || response?.servicios || response?.data || response?.results || [];
+
+      this.catalogServices = items.map((s) => {
+        const sku = String(s.sku || s.id || '').trim().toUpperCase();
+        return {
+          id: sku,
+          sku,
+          nombre: String(s.nombre || s.servicio || sku),
+          precioUnitario: Number(s.precioUnitario ?? s.precio_unitario ?? 0) || 0,
+          descripcion: String(s.descripcion || '')
+        };
+      });
+
+      this.servicesBySku = new Map();
+      this.catalogServices.forEach((s) => {
+        if (s.sku) {
+          this.servicesBySku.set(s.sku, s);
+        }
+      });
+
+      this.servicesLoaded = true;
+    } catch (err) {
+      this.servicesLoadError = err?.message || 'Error al cargar servicios del catálogo.';
+      this.servicesLoaded = true;
+    }
+
+    this.renderRows(facturaStore.getState().productos);
+  }
+
+  getFilteredServices(currentSku) {
+    const query = this.filterQuery;
+    const baseList = !query
+      ? this.catalogServices
+      : this.catalogServices.filter((s) => {
+          return (
+            s.nombre.toLowerCase().includes(query) ||
+            s.sku.toLowerCase().includes(query) ||
+            s.descripcion.toLowerCase().includes(query)
+          );
+        });
+
+    if (currentSku && !baseList.some((s) => s.sku === currentSku)) {
+      const currentService = this.servicesBySku.get(currentSku);
+      if (currentService) {
+        return [currentService, ...baseList];
+      }
+    }
+
+    return baseList;
   }
 
   /**
-   * Renderiza los renglones usando creación segura del DOM
+   * Renderiza los renglones usando creación segura del DOM y textContent
    * @param {Array} productos
    */
   renderRows(productos) {
     if (!this.tableBody) return;
 
-    // Verificar SKUs repetidos para advertencia de usabilidad
     const skuCounts = new Map();
     productos.forEach((p) => {
       const clean = (p.sku || '').trim().toUpperCase();
@@ -50,8 +124,6 @@ export class ItemsTableController {
     });
 
     const isOnlyOneRow = productos.length <= 1;
-
-    // Reemplazo seguro de nodos hijos
     const fragment = document.createDocumentFragment();
 
     productos.forEach((item, index) => {
@@ -59,29 +131,57 @@ export class ItemsTableController {
       row.className = `product-row ${item.skuError ? 'has-sku-error' : ''}`;
       row.setAttribute('data-id', item.id);
 
-      // Columna 1: SKU
+      // Columna 1: Selector de Servicio (almacena id_service SRV-XXX)
       const skuCol = document.createElement('div');
       skuCol.className = 'col-sku';
 
-      const skuInput = document.createElement('input');
-      skuInput.type = 'text';
-      skuInput.className = `form-input input-sku font-mono ${item.skuError ? 'input-error' : ''}`;
-      skuInput.value = item.sku;
-      skuInput.placeholder = 'Ej. SRV-HOST-001';
-      skuInput.maxLength = 30;
-      skuInput.setAttribute('aria-label', `SKU del producto renglón ${index + 1}`);
+      const serviceSelect = document.createElement('select');
+      serviceSelect.className = `form-input input-sku ${item.skuError ? 'input-error' : ''}`;
+      serviceSelect.setAttribute('aria-label', `Servicio del renglón ${index + 1}`);
 
       if (item.skuError) {
-        skuInput.setAttribute('aria-invalid', 'true');
+        serviceSelect.setAttribute('aria-invalid', 'true');
       }
 
-      skuInput.addEventListener('input', (e) => {
-        facturaStore.updateProduct(item.id, 'sku', e.target.value);
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      if (!this.servicesLoaded) {
+        defaultOption.textContent = 'Cargando servicios...';
+      } else if (this.servicesLoadError) {
+        defaultOption.textContent = 'Error al cargar servicios';
+      } else {
+        defaultOption.textContent = 'Selecciona un servicio...';
+      }
+      serviceSelect.appendChild(defaultOption);
+
+      const optionsList = this.getFilteredServices(item.sku);
+      optionsList.forEach((srv) => {
+        const opt = document.createElement('option');
+        opt.value = srv.sku;
+        opt.textContent = `${srv.nombre} (${srv.sku})`;
+        serviceSelect.appendChild(opt);
       });
 
-      skuCol.appendChild(skuInput);
+      // Si el renglón tiene un SKU que ya no existe en el listado, conservar la opción visible para depuración
+      if (item.sku && !optionsList.some((s) => s.sku === item.sku)) {
+        const orphanOpt = document.createElement('option');
+        orphanOpt.value = item.sku;
+        orphanOpt.textContent = item.nombreServicio
+          ? `${item.nombreServicio} (${item.sku})`
+          : item.sku;
+        serviceSelect.appendChild(orphanOpt);
+      }
 
-      // Mensaje de error de SKU si el servidor lo rechazó
+      serviceSelect.value = item.sku || '';
+
+      serviceSelect.addEventListener('change', (e) => {
+        const selectedSku = e.target.value.trim().toUpperCase();
+        const selectedService = selectedSku ? this.servicesBySku.get(selectedSku) || null : null;
+        facturaStore.setProductService(item.id, selectedService);
+      });
+
+      skuCol.appendChild(serviceSelect);
+
       if (item.skuError) {
         const errorMsg = document.createElement('span');
         errorMsg.className = 'sku-error-msg';
@@ -90,17 +190,18 @@ export class ItemsTableController {
       } else if (item.sku && (skuCounts.get(item.sku.trim().toUpperCase()) || 0) > 1) {
         const warnMsg = document.createElement('span');
         warnMsg.className = 'sku-warn-msg';
-        warnMsg.textContent = 'Advertencia: SKU repetido en la lista.';
+        warnMsg.textContent = 'Advertencia: servicio repetido en la lista.';
         skuCol.appendChild(warnMsg);
       }
 
-      // Columna 2: Cantidad (entero >= 1)
+      // Columna 2: Cantidad (entero 1..9999)
       const qtyCol = document.createElement('div');
       qtyCol.className = 'col-qty';
 
       const qtyInput = document.createElement('input');
       qtyInput.type = 'number';
       qtyInput.min = '1';
+      qtyInput.max = '9999';
       qtyInput.step = '1';
       qtyInput.className = 'form-input input-qty';
       qtyInput.value = item.cantidad;
@@ -112,21 +213,18 @@ export class ItemsTableController {
 
       qtyCol.appendChild(qtyInput);
 
-      // Columna 3: Precio unitario (número >= 0)
+      // Columna 3: Precio unitario (readonly, llenado desde DynamoDB)
       const priceCol = document.createElement('div');
       priceCol.className = 'col-price';
 
       const priceInput = document.createElement('input');
       priceInput.type = 'number';
-      priceInput.min = '0';
-      priceInput.step = '0.01';
+      priceInput.readOnly = true;
+      priceInput.setAttribute('readonly', '');
+      priceInput.setAttribute('aria-readonly', 'true');
       priceInput.className = 'form-input input-price font-mono';
-      priceInput.value = item.precioUnitario.toFixed(2);
+      priceInput.value = Number(item.precioUnitario || 0).toFixed(2);
       priceInput.setAttribute('aria-label', `Precio unitario renglón ${index + 1}`);
-
-      priceInput.addEventListener('change', (e) => {
-        facturaStore.updateProduct(item.id, 'precioUnitario', e.target.value);
-      });
 
       priceCol.appendChild(priceInput);
 
@@ -144,9 +242,8 @@ export class ItemsTableController {
       deleteBtn.type = 'button';
       deleteBtn.className = 'btn-delete-row';
       deleteBtn.setAttribute('aria-label', `Quitar producto renglón ${index + 1}`);
-      deleteBtn.disabled = isOnlyOneRow; // Mínimo 1 renglón requerido
+      deleteBtn.disabled = isOnlyOneRow;
 
-      // Icono bote de basura SVG
       deleteBtn.innerHTML = `
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="3 6 5 6 21 6"></polyline>
@@ -180,21 +277,14 @@ export class ItemsTableController {
    */
   validateAll() {
     const state = facturaStore.getState();
-    let allValid = true;
+    if (!state.productos || state.productos.length === 0) {
+      return false;
+    }
 
-    state.productos.forEach((item) => {
+    return state.productos.every((item) => {
       const skuRes = validateSKU(item.sku);
-      if (!skuRes.isValid) {
-        allValid = false;
-      }
-      if (item.cantidad < 1 || isNaN(item.cantidad)) {
-        allValid = false;
-      }
-      if (item.precioUnitario < 0 || isNaN(item.precioUnitario)) {
-        allValid = false;
-      }
+      const validQty = Number.isInteger(item.cantidad) && item.cantidad >= 1 && item.cantidad <= 9999;
+      return skuRes.isValid && validQty;
     });
-
-    return allValid;
   }
 }

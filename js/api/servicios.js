@@ -1,5 +1,6 @@
 /**
  * Servicios de API para el Catálogo de Servicios (DynamoDB ListServices)
+ * y Catálogos Fiscales SAT (Oracle RDS).
  */
 
 import { apiClient } from './client.js';
@@ -30,6 +31,16 @@ export async function getServicios({ q = '', page = 1, limit = 12 } = {}) {
  */
 export async function getServicioById(id) {
   return apiClient(`/servicios/${encodeURIComponent(id)}`, {
+    method: 'GET'
+  });
+}
+
+/**
+ * Obtiene los 4 catálogos SAT activos desde Oracle RDS (SP_LISTAR_CATALOGOS_SAT)
+ * @returns {Promise<{formasPago: Array, metodosPago: Array, regimenesFiscales: Array, usosCfdi: Array}>}
+ */
+export async function getCatalogosSat() {
+  return apiClient('/catalogos/sat', {
     method: 'GET'
   });
 }
