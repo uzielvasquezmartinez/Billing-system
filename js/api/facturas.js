@@ -42,6 +42,19 @@ export async function emitirFactura(id) {
 }
 
 /**
+ * Cancela una factura timbrada con motivo auditable
+ * @param {string | number} id - Identificador de la factura
+ * @param {string} motivo - Motivo de cancelación (5..300 caracteres)
+ * @returns {Promise<object>}
+ */
+export async function cancelarFactura(id, motivo) {
+  return apiClient(`/facturas/${encodeURIComponent(id)}/cancelar`, {
+    method: 'POST',
+    body: JSON.stringify({ motivo })
+  });
+}
+
+/**
  * Obtiene la URL prefirmada de Amazon S3 para descarga en formato PDF o XML
  * @param {string | number} id
  * @param {'pdf' | 'xml'} formato

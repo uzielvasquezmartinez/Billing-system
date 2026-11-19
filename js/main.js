@@ -60,23 +60,10 @@ document.addEventListener('DOMContentLoaded', () => {
           alertManager,
           formController,
           itemsController,
-          (facturaEmitida, estadoFactura) => {
-            lastEmittedData = {
-              id: facturaEmitida.id,
-              folio: facturaEmitida.folio,
-              uuid: facturaEmitida.uuid,
-              fecha: facturaEmitida.fecha,
-              rfcEmisor: estadoFactura.rfcEmisor,
-              rfcReceptor: estadoFactura.rfcReceptor,
-              direccion: estadoFactura.direccion,
-              comentarios: estadoFactura.comentarios,
-              productos: estadoFactura.productos,
-              subtotal: estadoFactura.serverCalc.subtotal,
-              impuestos: estadoFactura.serverCalc.impuestos,
-              total: estadoFactura.serverCalc.total
-            };
+          (facturaEmitida) => {
+            lastEmittedData = facturaEmitida;
 
-            // Mostrar el comprobante oficial timbrado directamente dentro de Factura Nueva
+            // Mostrar el comprobante oficial timbrado con la respuesta real del backend
             if (creationStateEl && emittedStateEl) {
               creationStateEl.classList.add('is-hidden');
               emittedStateEl.classList.remove('is-hidden');
