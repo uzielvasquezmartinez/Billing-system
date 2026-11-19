@@ -2,9 +2,11 @@
   <div class="emitted-title-bar">
     <div>
       <h1 class="page-title" id="headingCatalogo">Catálogo de Servicios</h1>
-      <p class="cfdi-doc-subtitle">Consulta de claves tributarias SAT, tasas de IVA y asociación de SKUs.</p>
+      <p class="cfdi-doc-subtitle">Consulta de claves tributarias SAT, características de servicio y asociación de SKUs.</p>
     </div>
   </div>
+
+  <div id="catalogAlert" class="alert-container" role="alert" aria-live="assertive"></div>
 
   <div class="catalog-search-bar">
     <label for="catalogSearchInput" class="form-label">Buscar servicio o SKU</label>
@@ -13,7 +15,7 @@
         type="search"
         id="catalogSearchInput"
         class="form-input"
-        placeholder="Ej. hosting o SRV-HOST-001"
+        placeholder="Ej. SRV-001 o nombre del servicio"
         autocomplete="off"
       />
     </div>
@@ -25,9 +27,9 @@
       <table class="catalog-table" aria-label="Lista de servicios institucionales">
         <thead>
           <tr>
+            <th>SKU</th>
             <th>Servicio</th>
-            <th>Categoría</th>
-            <th>Tipo</th>
+            <th>Descripción</th>
             <th>Precio base</th>
           </tr>
         </thead>
@@ -35,71 +37,22 @@
       </table>
 
       <div class="catalog-pagination">
-        <span>Mostrando 3 servicios activos</span>
+        <span id="catalogPaginationInfo">Cargando servicios...</span>
         <div class="catalog-pagination-actions">
-          <button type="button" class="btn-page" disabled aria-label="Página anterior">Anterior</button>
-          <button type="button" class="btn-page" disabled aria-label="Página siguiente">Siguiente</button>
+          <button type="button" id="catalogPrevBtn" class="btn-page" disabled aria-label="Página anterior">Anterior</button>
+          <button type="button" id="catalogNextBtn" class="btn-page" disabled aria-label="Página siguiente">Siguiente</button>
         </div>
       </div>
     </div>
 
-    <!-- Panel de detalle fiscal y legal -->
+    <!-- Panel de detalle de servicio (5 secciones / 50 características) -->
     <aside class="card-panel" aria-label="Detalle del servicio">
-      <h2 class="catalog-detail-title" id="catalogDetailTitle">Hosting web básico</h2>
+      <h2 class="catalog-detail-title" id="catalogDetailTitle">Selecciona un servicio</h2>
 
       <div class="skus-associated-header">SKU ASOCIADOS</div>
       <div class="sku-pills-list" id="catalogDetailSkus"></div>
 
-      <div class="catalog-accordions">
-        <details class="accordion-item">
-          <summary class="accordion-title">
-            <span>Identificación</span>
-            <span class="font-mono">10</span>
-          </summary>
-          <div class="accordion-content">
-            <p class="summary-note">Claves de catálogo interno e identificador institucional del servicio.</p>
-          </div>
-        </details>
-
-        <details class="accordion-item">
-          <summary class="accordion-title">
-            <span>Comercial</span>
-            <span class="font-mono">10</span>
-          </summary>
-          <div class="accordion-content">
-            <p class="summary-note">Condiciones de venta, moneda base MXN y políticas de facturación periódica.</p>
-          </div>
-        </details>
-
-        <details class="accordion-item" open>
-          <summary class="accordion-title">
-            <span>Fiscal y legal</span>
-            <span class="font-mono">12</span>
-          </summary>
-          <!-- Lista de campos fiscales SAT -->
-          <div id="catalogFiscalDetails" class="accordion-content"></div>
-        </details>
-
-        <details class="accordion-item">
-          <summary class="accordion-title">
-            <span>Contractual</span>
-            <span class="font-mono">9</span>
-          </summary>
-          <div class="accordion-content">
-            <p class="summary-note">Acuerdos de nivel de servicio (SLA) y vigencia del convenio institucional.</p>
-          </div>
-        </details>
-
-        <details class="accordion-item">
-          <summary class="accordion-title">
-            <span>Operativa</span>
-            <span class="font-mono">9</span>
-          </summary>
-          <div class="accordion-content">
-            <p class="summary-note">Parámetros de entrega y aprovisionamiento de infraestructura educativa.</p>
-          </div>
-        </details>
-      </div>
+      <div class="catalog-accordions" id="catalogAccordions"></div>
     </aside>
   </div>
 </section>
