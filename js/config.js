@@ -4,14 +4,16 @@
  * NUNCA almacenar secretos, llaves privadas ni credenciales aquí.
  */
 
-export const CONFIG = Object.freeze({
-  // URL base de Amazon API Gateway (prod / dev)
-  API_BASE_URL: 'https://<tu-api-id>.execute-api.us-east-1.amazonaws.com/prod',
+const rawApiBaseUrl = import.meta.env?.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
 
-  // Configuración de Amazon Cognito
+export const CONFIG = Object.freeze({
+  // URL base de la API REST (inyectada desde .env.development / .env.production)
+  API_BASE_URL: rawApiBaseUrl.replace(/\/+$/, ''),
+
+  // Configuración de Amazon Cognito (referencia pública sin secretos)
   COGNITO: {
-    USER_POOL_ID: 'us-east-1_XXXXXXXXX',
-    CLIENT_ID: 'xxxxxxxxxxxxxxxxxxxxxxxxxx',
+    USER_POOL_ID: 'us-east-1_fWBs2LMa3',
+    CLIENT_ID: '1dhc6l396sgg79cl4qbn8shqn2',
     REGION: 'us-east-1'
   },
 
@@ -29,10 +31,9 @@ export const CONFIG = Object.freeze({
 
   /**
    * MODO DE PRUEBA / MOCK
-   * Permite interactuar con la aplicación sin requerir el backend de AWS en vivo.
-   * Cambiar a false para enviar peticiones HTTP reales a API Gateway.
+   * Deshabilitado permanentemente para operar contra la API real.
    */
-  MOCK_MODE: true,
+  MOCK_MODE: false,
 
   // Catálogo base de servicios para validación offline de SKUs
   CATALOG_SERVICES: [

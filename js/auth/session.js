@@ -7,6 +7,27 @@
 import { CONFIG } from '../config.js';
 
 class SessionManager {
+  constructor() {
+    this.sessionExpiredMessage = null;
+  }
+
+  /**
+   * Registra un aviso temporal en memoria para mostrarlo al montar #login
+   * @param {string} message
+   */
+  setSessionExpiredMessage(message) {
+    this.sessionExpiredMessage = message || null;
+  }
+
+  /**
+   * Obtiene y limpia el aviso temporal de sesión expirada
+   * @returns {string | null}
+   */
+  consumeSessionExpiredMessage() {
+    const msg = this.sessionExpiredMessage;
+    this.sessionExpiredMessage = null;
+    return msg;
+  }
   /**
    * Obtiene el token JWT actual de la sesión
    * @returns {string | null}
@@ -71,6 +92,7 @@ class SessionManager {
     try {
       sessionStorage.removeItem(CONFIG.AUTH.STORAGE_KEY_TOKEN);
       sessionStorage.removeItem(CONFIG.AUTH.STORAGE_KEY_USER);
+      sessionStorage.clear();
     } catch (err) {
       console.warn('Error al limpiar sessionStorage.', err);
     }

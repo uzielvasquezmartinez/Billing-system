@@ -174,6 +174,7 @@ export class NavbarController {
       // Mostrar cabecera y contenedor principal
       if (this.mainHeader) this.mainHeader.style.display = '';
       if (this.mainContent) this.mainContent.style.display = '';
+      this.updateUserBadge();
 
       // Ocultar contenedor de login
       if (this.loginContainer) {
