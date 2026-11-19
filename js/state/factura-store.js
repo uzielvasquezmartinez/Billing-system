@@ -1,11 +1,23 @@
 /**
  * Estado Único del Formulario de Facturación
  * Patrón Store reactivo con notificación a suscriptores.
- * El importe de cada renglón se calcula automáticamente (no se captura).
+ * El precioUnitario proviene del servicio seleccionado (readonly) y los totales oficiales los calcula el servidor.
  */
 
 import { roundToTwo } from '../utils/money.js';
-import { CONFIG } from '../config.js';
+
+function createEmptyRow(index = 1) {
+  return {
+    id: `row-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 6)}`,
+    sku: '',
+    servicioId: null,
+    nombreServicio: '',
+    cantidad: 1,
+    precioUnitario: 0,
+    importe: 0,
+    skuError: null
+  };
+}
 
 class FacturaStore {
   constructor() {
@@ -14,84 +26,60 @@ class FacturaStore {
   }
 
   /**
-   * Restablece el estado con valores iniciales
+   * Restablece el estado con valores iniciales limpios (sin datos mock ni servicioId cruzado)
    */
   reset() {
-    // Formato de fecha de hoy (YYYY-MM-DD para input date)
     const today = new Date().toISOString().split('T')[0];
 
     this.state = {
-      // Datos de la factura
+      // Datos fiscales requeridos por Oracle / CrearFacturaRequestDTO
       fecha: today,
-      rfcEmisor: 'EMI010203AB1',
-      rfcReceptor: 'REC040506CD2',
-      direccion: 'Av. Universidad 100, Col. Centro, Cuernavaca, Morelos',
-      comentarios: 'Pago a 30 días.',
+      rfcEmisor: '',
+      rfcReceptor: '',
+      razonSocial: '',
+      codigoPostal: '',
+      emailReceptor: '',
+      regimenFiscal: '',
+      usoCfdi: '',
+      formaPago: '03',
+      metodoPago: 'PUE',
+      direccion: '',
+      comentarios: '',
 
-      // Lista de productos con banderas fiscales (mínimo 1 renglón)
-      productos: [
-        {
-          id: 'row-1',
-          sku: 'SRV-HOST-001',
-          servicioId: 'srv-1',
-          cantidad: 2,
-          precioUnitario: 1200.00,
-          importe: 2400.00,
-          aplicaIVA: true,
-          tasaIVA: CONFIG.IVA_DEFAULT,
-          descuentoMaximo: 0,
-          skuError: null
-        },
-        {
-          id: 'row-2',
-          sku: 'SRV-SOP-014',
-          servicioId: 'srv-4',
-          cantidad: 1,
-          precioUnitario: 850.00,
-          importe: 850.00,
-          aplicaIVA: true,
-          tasaIVA: CONFIG.IVA_DEFAULT,
-          descuentoMaximo: 0,
-          skuError: null
-        },
-        {
-          id: 'row-3',
-          sku: 'SRV-DOM-003',
-          servicioId: 'srv-3',
-          cantidad: 3,
-          precioUnitario: 300.00,
-          importe: 900.00,
-          aplicaIVA: true,
-          tasaIVA: CONFIG.IVA_DEFAULT,
-          descuentoMaximo: 0,
-          skuError: null
-        }
-      ],
+      // Lista de productos (mínimo 1 renglón limpio)
+      productos: [createEmptyRow(1)],
 
       // Cálculo local preliminar
-      subtotalLocal: 4150.00,
+      subtotalLocal: 0,
 
       // Totales autorizados por el backend (servidor es la autoridad de cálculo)
       serverCalc: {
-        subtotal: 4150.00,
-        impuestos: 664.00, // IVA 16%
-        total: 4814.00
+        subtotal: 0,
+        impuestos: null,
+        total: null
       },
 
-      // Estado de envío y errores globales
+      // Banderas de validación y envío
+      isValidated: false,
+      isValidating: false,
       isSubmitting: false,
       globalError: null,
       skuErrorsList: []
     };
 
     this.recalculateLocalSubtotal();
+    this.notify();
   }
 
   /**
-   * Obtiene una copia inmutable del estado actual
+   * Obtiene una copia del estado actual
    */
   getState() {
-    return { ...this.state };
+    return {
+      ...this.state,
+      productos: this.state.productos.map((p) => ({ ...p })),
+      serverCalc: { ...this.state.serverCalc }
+    };
   }
 
   /**
@@ -101,7 +89,6 @@ class FacturaStore {
    */
   subscribe(listener) {
     this.listeners.add(listener);
-    // Notificación inmediata al suscribirse
     listener(this.getState());
     return () => this.listeners.delete(listener);
   }
@@ -129,27 +116,42 @@ class FacturaStore {
   }
 
   /**
-   * Agrega un nuevo renglón de producto a la lista
+   * Agrega un nuevo renglón limpio a la lista
    */
-  addProduct(initialData = {}) {
-    const newId = `row-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
-    const cantidad = initialData.cantidad || 1;
-    const precio = initialData.precioUnitario || 0;
-    const importe = roundToTwo(cantidad * precio);
+  addProduct() {
+    this.state.productos.push(createEmptyRow(this.state.productos.length + 1));
+    this.recalculateLocalSubtotal();
+    this.invalidateServerCalculation();
+    this.notify();
+  }
 
-    this.state.productos.push({
-      id: newId,
-      sku: initialData.sku || '',
-      servicioId: initialData.servicioId || null,
-      cantidad,
-      precioUnitario: precio,
-      importe,
-      aplicaIVA: initialData.aplicaIVA !== undefined ? initialData.aplicaIVA : true,
-      tasaIVA: initialData.tasaIVA !== undefined ? initialData.tasaIVA : CONFIG.IVA_DEFAULT,
-      descuentoMaximo: initialData.descuentoMaximo || 0,
-      skuError: null
-    });
+  /**
+   * Agrega un renglón desde el buscador del catálogo o completa el primer renglón vacío
+   * @param {object} service
+   */
+  addProductWithService(service) {
+    if (!service) return;
 
+    const firstRow = this.state.productos[0];
+    if (this.state.productos.length === 1 && firstRow && !firstRow.sku) {
+      this.setProductService(firstRow.id, service);
+      return;
+    }
+
+    const row = createEmptyRow(this.state.productos.length + 1);
+    const idService = String(service.sku || service.id || '').trim().toUpperCase();
+    const precio = Math.max(
+      0,
+      parseFloat(service.precioUnitario ?? service.precio_unitario ?? 0) || 0
+    );
+
+    row.sku = idService;
+    row.servicioId = idService;
+    row.nombreServicio = service.nombre || '';
+    row.precioUnitario = precio;
+    row.importe = roundToTwo(row.cantidad * precio);
+
+    this.state.productos.push(row);
     this.recalculateLocalSubtotal();
     this.invalidateServerCalculation();
     this.notify();
@@ -160,7 +162,7 @@ class FacturaStore {
    */
   removeProduct(rowId) {
     if (this.state.productos.length <= 1) {
-      return false; // No se puede eliminar el último renglón
+      return false;
     }
 
     this.state.productos = this.state.productos.filter((p) => p.id !== rowId);
@@ -171,22 +173,52 @@ class FacturaStore {
   }
 
   /**
-   * Actualiza los valores de un renglón de producto
+   * Asigna un servicio del catálogo de DynamoDB a un renglón
+   * @param {string} rowId
+   * @param {object | null} service
+   */
+  setProductService(rowId, service) {
+    const item = this.state.productos.find((p) => p.id === rowId);
+    if (!item) return;
+
+    if (!service) {
+      item.sku = '';
+      item.servicioId = null;
+      item.nombreServicio = '';
+      item.precioUnitario = 0;
+      item.importe = 0;
+      item.skuError = null;
+    } else {
+      const idService = String(service.sku || service.id || '').trim().toUpperCase();
+      const precio = Math.max(
+        0,
+        parseFloat(service.precioUnitario ?? service.precio_unitario ?? 0) || 0
+      );
+      item.sku = idService;
+      item.servicioId = idService;
+      item.nombreServicio = service.nombre || '';
+      item.precioUnitario = precio;
+      item.importe = roundToTwo(item.cantidad * precio);
+      item.skuError = null;
+    }
+
+    this.recalculateLocalSubtotal();
+    this.invalidateServerCalculation();
+    this.notify();
+  }
+
+  /**
+   * Actualiza la cantidad (u otro campo permitido) de un renglón de producto
    */
   updateProduct(rowId, field, value) {
     const item = this.state.productos.find((p) => p.id === rowId);
     if (!item) return;
 
     if (field === 'cantidad') {
-      item.cantidad = Math.max(1, parseInt(value, 10) || 1);
-    } else if (field === 'precioUnitario') {
-      item.precioUnitario = Math.max(0, parseFloat(value) || 0);
-    } else if (field === 'sku') {
-      item.sku = String(value).trim().toUpperCase();
-      item.skuError = null; // Limpiar error de SKU al editar
+      const parsed = parseInt(value, 10);
+      item.cantidad = Math.min(9999, Math.max(1, Number.isNaN(parsed) ? 1 : parsed));
     }
 
-    // El importe del renglón se calcula automáticamente, nunca se captura
     item.importe = roundToTwo(item.cantidad * item.precioUnitario);
 
     this.recalculateLocalSubtotal();
@@ -203,43 +235,61 @@ class FacturaStore {
   }
 
   /**
-   * Invalida los totales del servidor si el usuario modifica cantidades, precios o SKUs
+   * Invalida los totales del servidor y deshabilita Emitir cuando cambian los productos
    */
   invalidateServerCalculation() {
+    this.state.isValidated = false;
     this.state.serverCalc = {
       subtotal: this.state.subtotalLocal,
-      impuestos: null, // Muestra "—" mientras no haya respuesta del servidor
+      impuestos: null,
       total: null
     };
   }
 
   /**
-   * Establece los totales calculados por la autoridad del servidor
+   * Establece los totales calculados por la autoridad del servidor y habilita Emitir
    */
-  setServerCalculation({ subtotal, impuestos, total }) {
+  setServerCalculation({ subtotal, impuestos, total, itemsValidados }) {
+    if (Array.isArray(itemsValidados)) {
+      itemsValidados.forEach((validItem) => {
+        const idx = Number(validItem.renglon) - 1;
+        const row = this.state.productos[idx];
+        if (row && validItem.precioUnitario !== undefined) {
+          row.precioUnitario = Math.max(0, parseFloat(validItem.precioUnitario) || 0);
+          row.importe = roundToTwo(validItem.importe ?? row.cantidad * row.precioUnitario);
+          if (validItem.nombre) {
+            row.nombreServicio = validItem.nombre;
+          }
+          row.skuError = null;
+        }
+      });
+      this.recalculateLocalSubtotal();
+    }
+
     this.state.serverCalc = {
       subtotal: roundToTwo(subtotal),
       impuestos: roundToTwo(impuestos),
       total: roundToTwo(total)
     };
+    this.state.isValidated = true;
     this.notify();
   }
 
   /**
-   * Registra errores de SKU devueltos por el backend
-   * Marca cada renglón afectado y prepara la lista global
+   * Registra errores de SKU devueltos por el backend (HTTP 422, renglon base 1)
    */
   setSkuErrors(errores) {
-    this.state.skuErrorsList = errores;
+    this.state.isValidated = false;
+    this.state.skuErrorsList = Array.isArray(errores) ? errores : [];
 
-    // Limpiar errores previos en renglones
-    this.state.productos.forEach((p) => (p.skuError = null));
+    this.state.productos.forEach((p) => {
+      p.skuError = null;
+    });
 
-    // Asignar errores a los renglones correspondientes
-    errores.forEach((err) => {
-      const index = err.renglon - 1;
+    this.state.skuErrorsList.forEach((err) => {
+      const index = Number(err.renglon) - 1;
       if (this.state.productos[index]) {
-        this.state.productos[index].skuError = err.mensaje;
+        this.state.productos[index].skuError = err.mensaje || 'SKU sin servicio válido.';
       }
     });
 
@@ -251,7 +301,17 @@ class FacturaStore {
    */
   clearSkuErrors() {
     this.state.skuErrorsList = [];
-    this.state.productos.forEach((p) => (p.skuError = null));
+    this.state.productos.forEach((p) => {
+      p.skuError = null;
+    });
+    this.notify();
+  }
+
+  /**
+   * Establece el estado de validación contra el backend
+   */
+  setValidating(isValidating) {
+    this.state.isValidating = Boolean(isValidating);
     this.notify();
   }
 
@@ -259,7 +319,7 @@ class FacturaStore {
    * Establece el estado de envío (botón Emitiendo...)
    */
   setSubmitting(isSubmitting) {
-    this.state.isSubmitting = isSubmitting;
+    this.state.isSubmitting = Boolean(isSubmitting);
     this.notify();
   }
 }

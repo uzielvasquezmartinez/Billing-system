@@ -1,27 +1,29 @@
 /**
  * Punto de Entrada Principal (ES Module)
- * Conecta el enrutador asíncrono con las vistas modulares (/views/*.html)
- * y los controladores específicos de cada pantalla.
+ * Define explícitamente rutas públicas (#login, #forgot) y privadas (#factura-nueva, #catalogo),
+ * conectando el enrutador con las vistas modulares y sus controladores.
  */
 
-import { NavbarController } from './ui/navbar.js';
+import { NavbarController, PUBLIC_ROUTES, PRIVATE_ROUTES } from './ui/navbar.js';
 import { InvoiceFormController } from './ui/form.js';
 import { ItemsTableController } from './ui/items-table.js';
 import { SummaryController } from './ui/summary.js';
 import { EmittedInvoiceController } from './ui/emitted.js';
 import { CatalogController } from './ui/catalog.js';
 import { LoginFormController } from './ui/login-form.js';
+import { ForgotPasswordController } from './ui/forgot-form.js';
 import { AlertManager } from './ui/alerts.js';
+import { session } from './auth/session.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Estado local para conservar la última factura timbrada al navegar
   let lastEmittedData = null;
-
-  // Enrutador y controlador de navegación
   let navbarController;
 
   navbarController = new NavbarController({
-    // Callback cuando se monta la vista de Login (/views/login.html)
+    publicRoutes: PUBLIC_ROUTES,
+    privateRoutes: PRIVATE_ROUTES,
+
+    // Vista pública: #login
     onLoginMount: () => {
       const loginFormController = new LoginFormController(() => {
         navbarController.switchView('factura-nueva', true);
@@ -29,8 +31,21 @@ document.addEventListener('DOMContentLoaded', () => {
       loginFormController.init();
     },
 
-    // Callback cuando se monta un módulo principal (/views/{modulo}.html)
+    // Vista pública: #forgot
+    onForgotMount: () => {
+      const forgotController = new ForgotPasswordController(() => {
+        navbarController.switchView('login', true);
+      });
+      forgotController.init();
+    },
+
+    // Vistas privadas: #factura-nueva | #catalogo
     onModuleMount: (moduleName) => {
+      if (!session.isAuthenticated()) {
+        navbarController.switchView('login', true);
+        return;
+      }
+
       if (moduleName === 'factura-nueva') {
         const globalAlertContainer = document.getElementById('facturaAlert');
         const alertManager = new AlertManager(globalAlertContainer);
@@ -44,9 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const creationStateEl = document.getElementById('invoiceCreationState');
         const emittedStateEl = document.getElementById('invoiceEmittedState');
 
-        // Controlador del comprobante emitido integrado en el mismo módulo
         const emittedController = new EmittedInvoiceController(() => {
-          // Acción al pulsar "Crear nueva factura": resetea y vuelve al formulario
           if (creationStateEl && emittedStateEl) {
             emittedStateEl.classList.add('is-hidden');
             creationStateEl.classList.remove('is-hidden');
@@ -60,23 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
           alertManager,
           formController,
           itemsController,
-          (facturaEmitida, estadoFactura) => {
-            lastEmittedData = {
-              id: facturaEmitida.id,
-              folio: facturaEmitida.folio,
-              uuid: facturaEmitida.uuid,
-              fecha: facturaEmitida.fecha,
-              rfcEmisor: estadoFactura.rfcEmisor,
-              rfcReceptor: estadoFactura.rfcReceptor,
-              direccion: estadoFactura.direccion,
-              comentarios: estadoFactura.comentarios,
-              productos: estadoFactura.productos,
-              subtotal: estadoFactura.serverCalc.subtotal,
-              impuestos: estadoFactura.serverCalc.impuestos,
-              total: estadoFactura.serverCalc.total
-            };
+          (facturaEmitida) => {
+            lastEmittedData = facturaEmitida;
 
-            // Mostrar el comprobante oficial timbrado directamente dentro de Factura Nueva
             if (creationStateEl && emittedStateEl) {
               creationStateEl.classList.add('is-hidden');
               emittedStateEl.classList.remove('is-hidden');
@@ -88,11 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
         summaryController.init();
       }
 
-      if (moduleName === 'factura-emitida') {
-        // Redirección amigable si se ingresa a la ruta previa
-        navbarController.switchView('factura-nueva', true);
-      }
-
       if (moduleName === 'catalogo') {
         const catalogController = new CatalogController();
         catalogController.init();
@@ -100,6 +94,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Inicialización de la aplicación
   navbarController.init();
 });

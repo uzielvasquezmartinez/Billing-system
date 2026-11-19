@@ -40,6 +40,15 @@ export class LoginFormController {
 
     this.loadRememberedEmail();
     this.bindEvents();
+
+    const authNotice = session.consumeAuthNotice();
+    if (authNotice?.message) {
+      if (authNotice.type === 'success') {
+        this.alertManager.showSuccess(authNotice.message);
+      } else {
+        this.alertManager.showError(authNotice.message);
+      }
+    }
   }
 
   /**
@@ -193,8 +202,12 @@ export class LoginFormController {
         body: JSON.stringify({ email, password })
       });
 
-      session.setSession(response.token, response.user, remember);
-      this.alertManager.showSuccess(`¡Bienvenido de vuelta, ${response.user?.name || 'Usuario'}! Acceso concedido.`);
+      if (!response?.token) {
+        throw new ApiError('Respuesta de autenticación inválida del servidor.', 500, response);
+      }
+
+      session.setSession(response.token, response.user || null, remember);
+      this.alertManager.showSuccess(`Bienvenido, ${response.user?.name || response.user?.email || 'Usuario'}. Acceso concedido.`);
 
       // Notificación y redirección inmediata a Factura nueva
       setTimeout(() => {

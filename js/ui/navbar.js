@@ -1,15 +1,20 @@
 /**
  * Controlador de Navegación y Enrutador Modular
- * Carga de forma asíncrona las plantillas desde /views/*.html.
- * Gestiona la barra superior encapsulada, la sesión y la transición entre vistas.
+ * Separa estrictamente rutas públicas (#login, #forgot) y privadas (#factura-nueva, #catalogo).
+ * Toda ruta privada o desconocida sin token JWT válido oculta la barra superior y redirige a #login.
  */
 
 import { session } from '../auth/session.js';
 import { viewLoader } from './view-loader.js';
 
+export const PUBLIC_ROUTES = Object.freeze(['login', 'forgot']);
+export const PRIVATE_ROUTES = Object.freeze(['factura-nueva', 'catalogo']);
+
 export class NavbarController {
   constructor(viewCallbacks = {}) {
     this.viewCallbacks = viewCallbacks;
+    this.publicRoutes = viewCallbacks.publicRoutes || PUBLIC_ROUTES;
+    this.privateRoutes = viewCallbacks.privateRoutes || PRIVATE_ROUTES;
 
     // Contenedores estructurales
     this.mainHeader = document.getElementById('appHeader');
@@ -18,16 +23,29 @@ export class NavbarController {
     this.loginContainer = document.getElementById('loginContainer');
 
     this.currentView = null;
+    this.navbarMounted = false;
+    this.navSeq = 0;
   }
 
-  /**
-   * Inicializa la cabecera y el enrutador
-   */
-  async init() {
-    // 1. Cargar la plantilla modular del Navbar desde /views/navbar.html
+  normalizeRoute(rawHash) {
+    return String(rawHash || '')
+      .replace(/^#/, '')
+      .split('?')[0]
+      .trim()
+      .toLowerCase();
+  }
+
+  hidePrivateShell() {
+    if (this.mainHeader) this.mainHeader.style.display = 'none';
+    if (this.mainContent) this.mainContent.style.display = 'none';
+    if (this.viewContainer) this.viewContainer.replaceChildren();
+  }
+
+  async ensureNavbarMounted() {
+    if (this.navbarMounted) return;
+
     await viewLoader.renderInto('navbar', this.mainHeader);
 
-    // 2. Referencias a los elementos del navbar recién montados
     this.navCapsule = document.getElementById('mainNavCapsule');
     this.navLinks = document.querySelectorAll('.nav-module-btn');
     this.logoutBtn = document.getElementById('navbarLogoutBtn');
@@ -37,21 +55,39 @@ export class NavbarController {
     this.cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
     this.confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
 
-    this.bindEvents();
-    this.updateUserBadge();
-
-    // 3. Determinar la vista inicial según hash o sesión
-    let initialView = window.location.hash.replace('#', '');
-    if (!initialView || initialView === 'factura-emitida') {
-      initialView = session.isAuthenticated() ? 'factura-nueva' : 'login';
-    }
-
-    await this.switchView(initialView, true);
+    this.bindNavbarEvents();
+    this.navbarMounted = true;
   }
 
-  bindEvents() {
-    // Clics en los módulos principales de la cápsula
-    this.navLinks.forEach((btn) => {
+  /**
+   * Inicializa el enrutador asegurando que el cascarón privado permanezca oculto sin sesión
+   */
+  async init() {
+    this.hidePrivateShell();
+    this.bindGlobalRouterEvents();
+
+    const requested = this.normalizeRoute(window.location.hash);
+    if (!requested) {
+      const initialView = session.isAuthenticated() ? 'factura-nueva' : 'login';
+      await this.switchView(initialView, true);
+      return;
+    }
+
+    await this.switchView(requested, true);
+  }
+
+  bindGlobalRouterEvents() {
+    window.addEventListener('hashchange', async () => {
+      const requested = this.normalizeRoute(window.location.hash);
+      const targetView = requested || (session.isAuthenticated() ? 'factura-nueva' : 'login');
+      if (targetView !== this.currentView) {
+        await this.switchView(targetView, false);
+      }
+    });
+  }
+
+  bindNavbarEvents() {
+    this.navLinks?.forEach((btn) => {
       btn.addEventListener('click', async (e) => {
         const targetView = e.currentTarget.getAttribute('data-view');
         if (targetView && targetView !== this.currentView) {
@@ -60,30 +96,24 @@ export class NavbarController {
       });
     });
 
-    // Botón de Usuario / Salir: abre el mini modal accesible de confirmación
     if (this.logoutBtn && this.logoutModal) {
       this.logoutBtn.addEventListener('click', () => {
         this.updateUserBadge();
         if (typeof this.logoutModal.showModal === 'function') {
           this.logoutModal.showModal();
-        } else {
-          // Fallback en entornos donde <dialog> no tenga soporte modal
-          if (window.confirm('¿Deseas cerrar tu sesión institucional?')) {
-            session.logout(false);
-            this.switchView('login', true);
-          }
+        } else if (window.confirm('¿Deseas cerrar tu sesión institucional?')) {
+          session.logout(false);
+          this.switchView('login', true);
         }
       });
     }
 
-    // Botón Cancelar del modal
     if (this.cancelLogoutBtn && this.logoutModal) {
       this.cancelLogoutBtn.addEventListener('click', () => {
         this.logoutModal.close();
       });
     }
 
-    // Botón Confirmar cierre de sesión del modal
     if (this.confirmLogoutBtn && this.logoutModal) {
       this.confirmLogoutBtn.addEventListener('click', async () => {
         this.logoutModal.close();
@@ -92,7 +122,6 @@ export class NavbarController {
       });
     }
 
-    // Fallback de light-dismiss (clic fuera del diálogo) si closedby no está soportado nativamente
     if (this.logoutModal && !('closedBy' in HTMLDialogElement.prototype)) {
       const isOutside = (e, dialog) => {
         const r = dialog.getBoundingClientRect();
@@ -108,21 +137,12 @@ export class NavbarController {
         }
       });
     }
-
-    // Escuchar cambios de hash (navegación histórica del navegador)
-    window.addEventListener('hashchange', async () => {
-      const hash = window.location.hash.replace('#', '');
-      const targetHash = hash === 'factura-emitida' ? 'factura-nueva' : hash;
-      if (targetHash && targetHash !== this.currentView) {
-        await this.switchView(targetHash, false);
-      }
-    });
   }
 
   updateUserBadge() {
     const user = session.getUser();
-    const email = user?.email || 'admin@universidad.edu.mx';
-    const initial = email.charAt(0).toUpperCase();
+    const email = (user?.email || '').trim();
+    const initial = email ? email.charAt(0).toUpperCase() : '';
 
     if (this.userBadge) {
       this.userBadge.textContent = email;
@@ -131,56 +151,78 @@ export class NavbarController {
       this.modalUserEmail.textContent = email;
     }
 
-    const navbarAvatar = document.querySelector('.user-info-pill .user-avatar') || document.querySelector('.user-profile-btn .user-avatar') || document.querySelector('.user-avatar');
+    const navbarAvatar =
+      document.querySelector('.user-info-pill .user-avatar') ||
+      document.querySelector('.user-profile-btn .user-avatar') ||
+      document.querySelector('.user-avatar');
     if (navbarAvatar) navbarAvatar.textContent = initial;
 
-    const modalAvatar = document.querySelector('.user-avatar-tag') || document.querySelector('.logout-account-avatar');
+    const modalAvatar =
+      document.querySelector('.user-avatar-tag') ||
+      document.querySelector('.logout-account-avatar');
     if (modalAvatar) modalAvatar.textContent = initial;
   }
 
   /**
-   * Conmuta la vista activa cargando dinámicamente el HTML modular correspondiente
-   * @param {string} viewId - 'login' | 'factura-nueva' | 'catalogo'
+   * Resuelve y monta la vista respetando la separación de rutas públicas y privadas
+   * @param {string} viewId
    * @param {boolean} [updateHash=true]
    */
   async switchView(viewId, updateHash = true) {
-    const validViews = ['factura-nueva', 'catalogo', 'login'];
-    // Redirige 'factura-emitida' directamente a 'factura-nueva' (ahora unificada)
-    const normalizedView = viewId === 'factura-emitida' ? 'factura-nueva' : viewId;
-    const activeView = validViews.includes(normalizedView) ? normalizedView : 'factura-nueva';
+    const seq = ++this.navSeq;
+    const requested = this.normalizeRoute(viewId);
+    const isPublic = this.publicRoutes.includes(requested);
+    const authenticated = session.isAuthenticated();
+
+    let activeView;
+
+    if (isPublic) {
+      activeView = requested;
+    } else if (!authenticated) {
+      // Cualquier ruta privada o desconocida sin token válido fuerza redirección a #login
+      this.hidePrivateShell();
+      activeView = 'login';
+    } else {
+      const normalizedPrivate = requested === 'factura-emitida' ? 'factura-nueva' : requested;
+      activeView = this.privateRoutes.includes(normalizedPrivate)
+        ? normalizedPrivate
+        : 'factura-nueva';
+    }
 
     this.currentView = activeView;
 
-    if (updateHash && window.location.hash !== `#${activeView}`) {
+    if ((updateHash || activeView !== requested) && window.location.hash !== `#${activeView}`) {
       window.location.hash = `#${activeView}`;
     }
 
-    if (activeView === 'login') {
-      // Ocultar cabecera y contenedor principal
-      if (this.mainHeader) this.mainHeader.style.display = 'none';
-      if (this.mainContent) this.mainContent.style.display = 'none';
+    if (this.publicRoutes.includes(activeView)) {
+      this.hidePrivateShell();
 
-      // Cargar y mostrar la vista modular de Login desde /views/login.html
-      await viewLoader.renderInto('login', this.loginContainer);
+      await viewLoader.renderInto(activeView, this.loginContainer);
+      if (seq !== this.navSeq) return;
+
       if (this.loginContainer) {
         this.loginContainer.style.display = '';
       }
 
-      // Notificar al callback para inicializar el formulario de Login
-      if (typeof this.viewCallbacks.onLoginMount === 'function') {
+      if (activeView === 'login' && typeof this.viewCallbacks.onLoginMount === 'function') {
         this.viewCallbacks.onLoginMount();
+      } else if (activeView === 'forgot' && typeof this.viewCallbacks.onForgotMount === 'function') {
+        this.viewCallbacks.onForgotMount();
       }
     } else {
-      // Mostrar cabecera y contenedor principal
+      await this.ensureNavbarMounted();
+      if (seq !== this.navSeq) return;
+
       if (this.mainHeader) this.mainHeader.style.display = '';
       if (this.mainContent) this.mainContent.style.display = '';
+      this.updateUserBadge();
 
-      // Ocultar contenedor de login
       if (this.loginContainer) {
         this.loginContainer.style.display = 'none';
+        this.loginContainer.replaceChildren();
       }
 
-      // Actualizar estado activo en los botones de la cápsula
       if (this.navLinks) {
         this.navLinks.forEach((btn) => {
           const isTarget = btn.getAttribute('data-view') === activeView;
@@ -189,16 +231,14 @@ export class NavbarController {
         });
       }
 
-      // Cargar la vista modular solicitada desde /views/{activeView}.html
       await viewLoader.renderInto(activeView, this.viewContainer);
+      if (seq !== this.navSeq) return;
 
-      // Notificar al callback para inicializar los controladores de la vista
       if (typeof this.viewCallbacks.onModuleMount === 'function') {
         this.viewCallbacks.onModuleMount(activeView);
       }
     }
 
-    // Scroll arriba suave
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }
